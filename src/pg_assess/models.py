@@ -23,7 +23,7 @@ class TargetAuthorization(BaseModel):
     approved_at: datetime
     expires_at: datetime
     allowed_checks: list[CheckName]
-    max_requests_per_minute: int = Field(default=10, ge=1, le=60)
+    approved_ip_addresses: list[str] = Field(default_factory=list, max_length=8)\n    max_requests_per_minute: int = Field(default=10, ge=1, le=60)
     active: bool = True
 
     def is_current(self) -> bool:
