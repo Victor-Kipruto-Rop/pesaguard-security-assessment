@@ -75,6 +75,11 @@ Run the static audit against a local PesaGuard API checkout:
 
     pg-assess assess-source --repo-root ../api.pesaguard
 
+Run the optional read-only PostgreSQL inspector after installing the database extra and configuring exact host/IP allowlists:
+
+    pip install -e '.[db]'
+    pg-assess assess-database --confirm-read-only
+
 Import PesaGuard JUnit results:
 
     pg-assess import-junit --junit-file reports/pesaguard-security-tests.xml
