@@ -1,0 +1,14 @@
+services:
+  assessor:
+    build: .
+    ports: ["127.0.0.1:8080:8080"]
+    env_file: .env
+    environment:
+      ASSESSMENT_DATA_DIR: /app/reports
+    volumes:
+      - ./reports:/app/reports
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
