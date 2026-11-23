@@ -16,9 +16,8 @@ From the security-assessment checkout, explicitly approve the isolated test runn
 
 If the API checkout is not the sibling directory ../api.pesaguard, set PESAGUARD_API_REPO to its local path. The runner creates reports/pesaguard-security-tests.xml.
 
-Then import the test results:
+Then, from the security-assessment checkout, import the test results:
 
-    cd ../pesaguard-security-assessment
     pg-assess import-junit --junit-file reports/pesaguard-security-tests.xml
 
 Do not point PesaGuard tests at production or a database containing customer data. PostgreSQL race tests are opt-in and must only use a disposable test database. The importer reads a bounded JUnit XML report; it does not execute tests. It deliberately omits failure output and stdout/stderr from reports because those may contain secrets or customer data.
