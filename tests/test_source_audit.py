@@ -8,7 +8,7 @@ def test_source_audit_is_non_executing_and_reports_missing_ledger(tmp_path):
         'ACCESS_TOKEN_TTL_MINUTES <= 15\n"tenant_id"\nRefreshTokenRecord\n_hash_refresh_token\nabsolute_expires_at\n',
         encoding="utf-8")
     (package / "authorization_policy.py").write_text(
-        "deny by default wildcard_rejected unknown_permission", encoding="utf-8")
+        "Deny by default wildcard_rejected unknown_permission", encoding="utf-8")
     (package / "transaction_routes.py").write_text(
         "requested_tenant != authenticated_tenant tenant_access_denied Transaction.tenant_id == tenant_id",
         encoding="utf-8")
