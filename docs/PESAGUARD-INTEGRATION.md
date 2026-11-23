@@ -10,7 +10,7 @@ It uses text indicators only. It does not import PesaGuard modules, evaluate Pyt
 
 ## Import actual PesaGuard regression test results
 
-From the security-assessment checkout, explicitly approve the isolated test runner. It checks the API checkout, clears inherited deployment credentials, and relies on PesaGuard's test conftest to create a temporary SQLite database. PostgreSQL race tests are not enabled:
+From the security-assessment checkout, activate a Python environment containing the PesaGuard test dependencies and pytest, then explicitly approve the isolated test runner. It checks the API checkout, clears inherited deployment credentials, and relies on PesaGuard's test conftest to create a temporary SQLite database. PostgreSQL race tests are not enabled:
 
     PESAGUARD_SECURITY_TESTS_APPROVED=YES bash scripts/run_pesaguard_regression_tests.sh
 
