@@ -2,7 +2,7 @@
 from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
-from typing import Any
+from typing import Any\nimport json
 from .domain_checks import (database_checks, daraja_checks, identity_checks, infrastructure_checks,
     ledger_checks, outbound_webhook_checks, pipeline_checks, tenancy_checks, transaction_checks)
 from .models import AssessmentReport, Environment, Finding
@@ -14,6 +14,12 @@ DOMAINS = ("identity", "tenancy_cases", "transaction_cases", "ledger_entries", "
 def validate_bundle(bundle: dict[str, Any]) -> None:
     if not isinstance(bundle, dict):
         raise ValueError("Bundle root must be a JSON object.")
+    try:
+        encoded_size = len(json.dumps(bundle, ensure_ascii=False).encode("utf-8"))
+    except (TypeError, ValueError, RecursionError) as exc:
+        raise ValueError("Bundle must contain JSON-compatible values.") from exc
+    if encoded_size > 5_000_000:
+        raise ValueError("Assessment bundle exceeds the 5 MB input limit.")
     allowed = set(DOMAINS) | {"daraja_callbacks", "pipeline_source_files", "assessment_target_id"}
     unknown = set(bundle) - allowed
     if unknown:
@@ -32,8 +38,15 @@ def validate_bundle(bundle: dict[str, Any]) -> None:
             if key in {"pipeline_source_files", "infrastructure_files"}:
                 if not isinstance(item.get("path"), str) or not isinstance(item.get("content"), str):
                     raise ValueError(f"{key}[{index}] requires string path and content.")
-                if len(item["path"]) > 512 or len(item["content"]) > 200000:
+                if len(item["path"]) > 512 or len(item["content"]) > 100000:
                     raise ValueError(f"{key}[{index}] exceeds the file input limits.")
+            if key == "ledger_entries" and len(str(item.get("amount", ""))) > 64:
+                raise ValueError(f"{key}[{index}] amount exceeds the precision input limit.")
+            for field in ("case_id", "idempotency_key", "response_fingerprint",
+                          "provider_receipt", "transaction_id", "tenant_id", "provider_account_id"):
+                value = item.get(field)
+                if isinstance(value, str) and len(value) > 512:
+                    raise ValueError(f"{key}[{index}] field {field} exceeds the input limit.")
     target_id = bundle.get("assessment_target_id", "offline-bundle")
     if not isinstance(target_id, str) or not 3 <= len(target_id) <= 100:
         raise ValueError("assessment_target_id must contain 3 to 100 characters.")
