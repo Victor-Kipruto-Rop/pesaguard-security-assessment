@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from ipaddress import ip_address
 from urllib.parse import parse_qs, urlparse
 
 
@@ -21,6 +22,20 @@ def inspect_postgres_readonly(conninfo: str | None = None) -> dict:
     }
     if host not in local_hosts and host not in allowed_hosts:
         raise ValueError("Database hostname is not in PG_ASSESS_DATABASE_HOSTS.")
+    hostaddr = None
+    if host not in local_hosts:
+        ip_map = {}
+        for entry in os.getenv("PG_ASSESS_DATABASE_IPS", "").split(","):
+            if "=" not in entry:
+                continue
+            name, value = entry.split("=", 1)
+            try:
+                ip_map[name.strip().lower()] = str(ip_address(value.strip()))
+            except ValueError:
+                raise ValueError("PG_ASSESS_DATABASE_IPS contains an invalid address.") from None
+        hostaddr = ip_map.get(host)
+        if not hostaddr:
+            raise ValueError("Remote database host requires a pinned address in PG_ASSESS_DATABASE_IPS.")
     try:
         import psycopg
     except ImportError as exc:
@@ -29,6 +44,7 @@ def inspect_postgres_readonly(conninfo: str | None = None) -> dict:
     try:
         connection = psycopg.connect(
             connection_string,
+            hostaddr=hostaddr,
             connect_timeout=5,
             options="-c statement_timeout=5000 -c lock_timeout=1000",
         )
