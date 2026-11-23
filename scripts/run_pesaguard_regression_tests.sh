@@ -44,8 +44,17 @@ done
 
 mkdir -p "$ROOT_DIR/reports"
 
-# The PesaGuard test conftest creates a temporary SQLite database and overrides
+# Strip deployment credentials inherited from the shell before loading application
+# modules. The PesaGuard conftest creates a temporary SQLite database and overrides
 # DATABASE_URL. PostgreSQL race tests are deliberately not selected or enabled.
+while IFS= read -r variable; do
+  case "$variable" in
+    *SECRET*|*TOKEN*|*PASSWORD*|*PASSKEY*|*API_KEY*|*CONSUMER_KEY*|*ACCESS_KEY*|DATABASE_URL|REDIS_URL|KAFKA_BOOTSTRAP_SERVERS)
+      unset "$variable"
+      ;;
+  esac
+done < <(compgen -e)
+
 export USE_IN_MEMORY_TEST_DB=1
 export PESAGUARD_ENV=testing
 export PESAGUARD_ENVIRONMENT=testing
