@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+import hashlib\nfrom datetime import datetime, timezone\nfrom urllib.parse import urlparse
 from uuid import uuid4
 from .config import settings
 from .models import AssessmentReport, CheckName, Finding, TargetAuthorization
@@ -18,7 +18,10 @@ async def assess(auth: TargetAuthorization, requested_checks: list[CheckName]) -
         request_budget += 1
     try:
         limiter = TargetRateLimiter(f"{settings.assessment_data_dir}/rate-limits.sqlite3")
-        limiter.reserve(auth.target_id, request_budget, auth.max_requests_per_minute)
+        parsed_target = urlparse(str(auth.base_url))
+        target_identity = f"{auth.environment.value}|{parsed_target.hostname}|{parsed_target.port or (443 if parsed_target.scheme == 'https' else 80)}"
+        rate_key = hashlib.sha256(target_identity.encode("utf-8")).hexdigest()
+        limiter.reserve(rate_key, request_budget, auth.max_requests_per_minute)
     except RateLimitExceeded as exc:
         raise PolicyError(str(exc)) from exc
     started = datetime.now(timezone.utc)
