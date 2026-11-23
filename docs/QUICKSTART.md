@@ -48,6 +48,11 @@ For a local PesaGuard API checkout:
 
     pg-assess assess-source --repo-root ../api.pesaguard
 
+For an explicitly authorized PostgreSQL target, install the optional driver, set PG_ASSESS_DATABASE_URL and (for remote hosts) PG_ASSESS_DATABASE_HOSTS in the process environment, then run:
+
+    pip install -e '.[db]'
+    pg-assess assess-database --confirm-read-only
+
 ## API
 Start locally with:
 
