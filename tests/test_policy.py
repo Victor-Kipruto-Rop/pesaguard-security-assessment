@@ -69,3 +69,18 @@ def test_duplicate_approved_ips_are_rejected(monkeypatch):
                      approved_ip_addresses=["203.0.113.10", "203.0.113.10"])
     with pytest.raises(PolicyError, match="unique"):
         validate_target(auth, ["http_headers"])
+
+
+def test_staging_rejects_loopback_hostname_even_if_allowlisted(monkeypatch):
+    monkeypatch.setattr(settings, "assessment_allowed_staging_hosts", "localhost")
+    auth = make_auth(environment=Environment.STAGING, base_url="https://localhost",
+                     approved_ip_addresses=["192.0.2.10"])
+    with pytest.raises(PolicyError, match="loopback"):
+        validate_target(auth, ["http_headers"])
+
+def test_staging_rejects_loopback_approved_ip(monkeypatch):
+    monkeypatch.setattr(settings, "assessment_allowed_staging_hosts", "staging.pesaguard.co.ke")
+    auth = make_auth(environment=Environment.STAGING, base_url="https://staging.pesaguard.co.ke",
+                     approved_ip_addresses=["127.0.0.1"])
+    with pytest.raises(PolicyError, match="loopback"):
+        validate_target(auth, ["http_headers"])
