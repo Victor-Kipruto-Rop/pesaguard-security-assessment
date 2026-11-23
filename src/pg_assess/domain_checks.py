@@ -204,6 +204,10 @@ def daraja_checks(config: dict[str, Any], callbacks: list[dict[str, Any]] | None
     out: list[Finding] = []
     controls = {
         "callback_url_secret_enabled": "Use a high-entropy callback route secret and prevent URL leakage in access logs.",
+        "callback_token_digest_stored": "Store only a digest of the callback route token.",
+        "constant_time_token_comparison": "Compare callback token digests with a constant-time comparison.",
+        "terminal_callback_payload_digest": "Persist a canonical callback payload digest to distinguish exact replays from conflicting callbacks.",
+        "pending_request_only": "Accept callbacks only for an existing pending operation correlation.",
         "provider_source_restrictions_verified": "Apply source restrictions only using Safaricom-confirmed current ranges at the edge.",
         "correlate_to_initiated_request": "Accept a callback only when it correlates to a locally initiated, pending request.",
         "validate_amount_and_shortcode": "Match amount, currency, business shortcode, and expected transaction context.",
@@ -345,14 +349,20 @@ def infrastructure_checks(files: list[dict[str, str]]) -> list[Finding]:
 
 def outbound_webhook_checks(config: dict[str, Any], secret: str | None = None) -> list[Finding]:
     out: list[Finding] = []
-    if not _bool(config, "hmac_sha256_enabled"):
-        out.append(_finding("webhook", "Downstream webhook signing not confirmed", "high",
-            "The PesaGuard outbound webhook configuration does not confirm HMAC-SHA256 signing.",
-            "Sign the exact raw request body with a per-tenant secret and verify using constant-time comparison."))
-    if not _bool(config, "timestamp_and_replay_window_enforced"):
-        out.append(_finding("webhook", "Downstream webhook replay window not confirmed", "high",
-            "The webhook configuration does not confirm timestamp freshness and replay protection.",
-            "Include a signed timestamp/event identifier and reject stale or previously processed events."))
+    webhook_controls = {
+        "hmac_sha256_enabled": "Sign the exact raw request body with HMAC-SHA256.",
+        "sign_exact_raw_body": "Sign the exact raw bytes, not a re-serialized JSON object.",
+        "constant_time_signature_comparison": "Verify signatures using constant-time comparison.",
+        "per_tenant_signing_secret": "Use independently rotatable tenant-scoped webhook secrets.",
+        "timestamp_and_replay_window_enforced": "Include a signed timestamp and reject stale events.",
+        "event_id_deduplication": "Deduplicate delivery attempts by stable event ID.",
+        "bounded_retry_policy": "Use bounded exponential retry and a dead-letter path.",
+    }
+    for key, recommendation in webhook_controls.items():
+        if not _bool(config, key):
+            out.append(_finding("webhook", f"Downstream webhook control not confirmed: {key}", "high",
+                f"The PesaGuard outbound webhook configuration does not confirm {key}.",
+                recommendation, {"control": key}, "medium"))
     if secret is not None and len(secret) < 32:
         out.append(_finding("webhook", "Webhook signing secret is too short", "critical",
             "The supplied test secret is shorter than 32 characters.",
