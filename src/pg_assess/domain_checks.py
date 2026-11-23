@@ -26,6 +26,9 @@ def _finding(check: str, title: str, severity: str, description: str,
 def _bool(config: dict[str, Any], key: str) -> bool:
     return config.get(key) is True
 
+def _ref_hash(value: Any) -> str:
+    return hashlib.sha256(str(value).encode("utf-8")).hexdigest()[:24]
+
 
 def identity_checks(config: dict[str, Any]) -> list[Finding]:
     out: list[Finding] = []
@@ -51,7 +54,8 @@ def identity_checks(config: dict[str, Any]) -> list[Finding]:
         if not _bool(config, key):
             out.append(_finding("identity", f"Identity control not confirmed: {key}", "high",
                 f"The supplied identity configuration does not confirm {key}.",
-                recommendation, {"control": key, "configured": str(config.get(key, "missing"))},
+                recommendation, {"control": key, "configured_type": type(config.get(key)).__name__,
+                 "confirmed": str(config.get(key) is True)},
                 "medium"))
     ttl = config.get("access_token_ttl_seconds")
     if isinstance(ttl, bool) or not isinstance(ttl, int) or ttl <= 0 or ttl > 900:
@@ -126,7 +130,7 @@ def transaction_checks(cases: list[dict[str, Any]]) -> list[Finding]:
             out.append(_finding("transactions", "Transaction fixture is missing idempotency evidence", "medium",
                 "Each idempotency observation must include an idempotency key and response fingerprint.",
                 "Record the tenant-scoped idempotency key and a non-sensitive fingerprint of the stable response.",
-                {"case_id": str(case.get("case_id", ""))[:80]}, "medium"))
+                {"case_ref": _ref_hash(case.get("case_id", ""))}, "medium"))
         else:
             key_groups.setdefault((tenant_id, key), []).append(case)
         if receipt:
@@ -301,7 +305,7 @@ def database_checks(config: dict[str, Any]) -> list[Finding]:
         out.append(_finding("database", "Database TLS verification mode is weak or unspecified", "high",
             "The configured SSL mode is not verify-ca or verify-full.",
             "Use certificate-verifying TLS modes and a trusted CA bundle.",
-            {"sslmode": str(config.get("sslmode", "missing"))}))
+            {"sslmode": str(config.get("sslmode")) if config.get("sslmode") in {"verify-full", "verify-ca", "require", "prefer", "disable"} else "missing_or_unrecognized"}))
     for key, title, recommendation in [
         ("role_has_create_database", "Application database role can create databases",
          "Remove CREATEDB from the runtime application role."),
