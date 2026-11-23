@@ -9,6 +9,8 @@ def validate_target(auth: TargetAuthorization, requested_checks: list[str]) -> N
         raise PolicyError("Authorization is inactive, expired, or has invalid timestamps.")
     parsed = urlparse(str(auth.base_url))
     host = parsed.hostname or ""
+    if parsed.username or parsed.password or parsed.query or parsed.fragment:
+        raise PolicyError("Target URL must not contain userinfo, query parameters, or fragments.")
     if parsed.scheme != "https" and not (parsed.scheme == "http" and host in {"localhost", "127.0.0.1", "::1"}):
         raise PolicyError("HTTPS is required except for loopback-only local targets.")
     if auth.environment == Environment.LOCAL and host not in {"localhost", "127.0.0.1", "::1"}:
