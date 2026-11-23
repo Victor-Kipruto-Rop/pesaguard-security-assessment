@@ -58,12 +58,20 @@ def run_bundle(bundle: dict[str, Any]) -> tuple[AssessmentReport, dict[str, Any]
         if name in bundle or name == "tenancy" and "tenancy_cases" in bundle or name == "transactions" and "transaction_cases" in bundle or name == "ledger" and "ledger_entries" in bundle or name == "data_pipeline" and ("pipeline" in bundle or "pipeline_source_files" in bundle) or name == "infrastructure" and "infrastructure_files" in bundle or name == "webhook" and "outbound_webhook" in bundle:
             findings.extend(runner())
             checks.append(name)
+    if not checks:
+        findings.append(__import__("pg_assess.models", fromlist=["Finding"]).Finding(
+            check="coverage", title="Assessment bundle contains no domains", severity="high",
+            confidence="high", description="No assessment domain was supplied; no security controls were evaluated.",
+            recommendation="Supply sanitized snapshots or synthetic observations for the domains in docs/DOMAIN-ADAPTERS.md.",
+            verified=False))
     risk = score_findings(findings)
+    missing = sorted(set(["identity", "tenancy", "transactions", "ledger", "daraja",
+                          "database", "data_pipeline", "infrastructure", "webhook"]) - set(checks))
     report = AssessmentReport(assessment_id=str(uuid4()), target_id=str(bundle.get("assessment_target_id", "offline-bundle")),
         target_url="offline://sanitized-assessment-bundle", environment=Environment.LOCAL,
         started_at=started, completed_at=datetime.now(timezone.utc), status="completed",
         findings=findings, checks_run=checks,
         notes=["Offline configuration and synthetic-fixture assessment; no live systems contacted.",
-               "Only supplied domains were assessed. Missing domains are not verified.",
+               "Only supplied domains were assessed. Missing domains are not verified: " + ", ".join(missing),
                "Risk score is a prioritization aid, not a probability or compliance rating."])
     return report, risk
