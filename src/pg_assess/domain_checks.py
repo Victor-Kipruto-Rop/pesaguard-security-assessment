@@ -356,21 +356,34 @@ def infrastructure_checks(files: list[dict[str, str]]) -> list[Finding]:
          "Run workloads as a dedicated non-root UID and enforce runAsNonRoot."),
         (re.compile(r"(?im)^\s*allowPrivilegeEscalation\s*:\s*true\b"), "Privilege escalation allowed", "high",
          "Set allowPrivilegeEscalation to false and drop unnecessary Linux capabilities."),
+        (re.compile(r"(?im)^\s*runAsNonRoot\s*:\s*false\b"), "Kubernetes workload may run as root", "high",
+         "Set runAsNonRoot to true and configure a non-root runAsUser."),
+        (re.compile(r"(?im)^\s*(?:read_only|readOnlyRootFilesystem)\s*:\s*false\b"), "Container root filesystem is writable", "medium",
+         "Use a read-only root filesystem and mount only required writable paths."),
+        (re.compile(r"(?im)^\s*hostPath\s*:"), "Kubernetes hostPath volume configured", "high",
+         "Avoid hostPath mounts unless there is a documented, tightly scoped operational need."),
+        (re.compile(r"(?im)^\s*hostNetwork\s*:\s*true\b"), "Kubernetes host networking enabled", "high",
+         "Use isolated pod networking and explicit service exposure."),
+        (re.compile(r"(?im)^\s*user\s*:\s*['\"]?root\b"), "Container explicitly runs as root", "high",
+         "Run containers as a dedicated non-root UID."),
         (re.compile(r"(?im)0\.0\.0\.0:(?:5432|6379|9092)"), "Internal data service bound to all interfaces", "high",
          "Do not publish database, cache, or broker ports publicly; use private networking."),
+        (re.compile(r"(?im)(?:^|[\[\s,'\"])(?:5432:5432|6379:6379|9092:9092)"), "Internal data service port published without an explicit loopback bind", "high",
+         "Do not publish database, cache, or broker ports publicly; use private networking."),
+        (re.compile(r"(?im)^\s*image\s*:\s*[^#\s]+:latest\s*$"), "Container image uses the mutable latest tag", "medium",
+         "Pin container images to immutable digests or reviewed version tags."),
         (re.compile(r"(?im)\b(?:AWS_SECRET_ACCESS_KEY|DARAJA_CONSUMER_SECRET|MPESA_PASSKEY)\s*[:=]\s*['\"]?[^\s'\"$]{8,}"), "Potential hard-coded infrastructure secret", "critical",
          "Rotate exposed secrets and use a managed secret store."),
     ]
     for file in files:
         path = str(PurePosixPath(file.get("path", "unknown")))
-        content = file.get("content", "")
+        source = file.get("content", "")
         for pattern, title, severity, recommendation in patterns:
-            if pattern.search(content):
+            if pattern.search(source):
                 out.append(_finding("infrastructure", title, severity,
                     f"A risky configuration pattern was found in {path}.",
                     recommendation, {"file": path[:160]}))
     return out
-
 
 def outbound_webhook_checks(config: dict[str, Any], secret: str | None = None) -> list[Finding]:
     out: list[Finding] = []
