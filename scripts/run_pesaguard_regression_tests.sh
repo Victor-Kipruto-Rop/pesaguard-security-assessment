@@ -49,7 +49,7 @@ mkdir -p "$ROOT_DIR/reports"
 # DATABASE_URL. PostgreSQL race tests are deliberately not selected or enabled.
 while IFS= read -r variable; do
   case "$variable" in
-    *SECRET*|*TOKEN*|*PASSWORD*|*PASSKEY*|*API_KEY*|*CONSUMER_KEY*|*ACCESS_KEY*|DATABASE_URL|PYTEST_TEST_DB_URL|TEST_DATABASE_URL|REDIS_URL|KAFKA_BOOTSTRAP_SERVERS)
+    *SECRET*|*TOKEN*|*PASSWORD*|*PASSKEY*|*API_KEY*|*CONSUMER_KEY*|*ACCESS_KEY*|*DATABASE_URL*|PYTEST_TEST_DB_URL|TEST_DATABASE_URL|REDIS_URL|KAFKA_BOOTSTRAP_SERVERS)
       unset "$variable"
       ;;
   esac
