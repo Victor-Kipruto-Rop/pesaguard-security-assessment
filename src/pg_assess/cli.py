@@ -18,6 +18,14 @@ def run(authorization_file: Path = typer.Option(..., exists=True, readable=True)
     selected = [CheckName(item.strip()) for item in checks.split(",") if item.strip()]
     report = asyncio.run(assess(auth, selected))
     paths = save_report(report, str(output))
+    from .evidence import EvidenceStore
+    EvidenceStore(str(output / "evidence.sqlite3")).append("assessment.active.completed", {
+        "assessment_id": report.assessment_id,
+        "target_id": report.target_id,
+        "environment": report.environment.value,
+        "checks_run": report.checks_run,
+        "finding_count": len(report.findings),
+    })
     print(f"[green]Assessment complete[/green] {report.assessment_id}")
     print(f"JSON: {paths[0]}\nHTML: {paths[1]}")
 
