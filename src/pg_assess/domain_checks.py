@@ -100,15 +100,18 @@ def transaction_checks(cases: list[dict[str, Any]]) -> list[Finding]:
         return [_finding("transactions", "No transaction idempotency cases supplied", "high",
             "No synthetic transaction processing observations were provided.",
             "Exercise duplicate request keys, provider references, and concurrent submissions in an isolated staging fixture.")]
-    key_groups: dict[str, list[dict[str, Any]]] = {}
-    receipt_groups: dict[str, list[dict[str, Any]]] = {}
+    key_groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    receipt_groups: dict[tuple[str, str, str, str], list[dict[str, Any]]] = {}
     for case in cases:
+        tenant_id = str(case.get("tenant_id", "synthetic-default"))
+        provider = str(case.get("provider", "mpesa"))
+        provider_account = str(case.get("provider_account_id", "synthetic-account"))
         key = str(case.get("idempotency_key", ""))
         receipt = str(case.get("provider_receipt", ""))
         if key:
-            key_groups.setdefault(key, []).append(case)
+            key_groups.setdefault((tenant_id, key), []).append(case)
         if receipt:
-            receipt_groups.setdefault(receipt, []).append(case)
+            receipt_groups.setdefault((tenant_id, provider, provider_account, receipt), []).append(case)
         side_effects = _safe_count(case.get("side_effect_count", 0))
         concurrent_writes = _safe_count(case.get("concurrent_duplicate_writes", 0))
         if side_effects is None or concurrent_writes is None:
@@ -128,21 +131,21 @@ def transaction_checks(cases: list[dict[str, Any]]) -> list[Finding]:
                 "The fixture reports duplicate writes under concurrent request execution.",
                 "Use database-backed uniqueness and transaction isolation; do not rely on in-process locks.",
                 {"case_id": str(case.get("case_id", ""))[:80]}))
-    for key, group in key_groups.items():
+    for (tenant_id, key), group in key_groups.items():
         fingerprints = {str(item.get("response_fingerprint", "")) for item in group}
         if len(fingerprints) > 1:
             out.append(_finding("transactions", "Idempotency key returned inconsistent outcomes", "high",
                 "Repeated use of one idempotency key produced different response fingerprints.",
                 "Persist and replay the original result for a given tenant-scoped idempotency key.",
-                {"idempotency_key_sha256": hashlib.sha256(key.encode()).hexdigest(),
+                {"idempotency_key_scope_sha256": hashlib.sha256(f"{tenant_id}|{key}".encode()).hexdigest(),
                  "observed_outcomes": str(len(fingerprints))}))
-    for receipt, group in receipt_groups.items():
+    for (tenant_id, provider, provider_account, receipt), group in receipt_groups.items():
         distinct = {str(item.get("transaction_id", "")) for item in group}
         if len(distinct) > 1:
             out.append(_finding("transactions", "Provider receipt linked to multiple transactions", "critical",
                 "One synthetic provider receipt is associated with multiple internal transaction IDs.",
                 "Enforce uniqueness on provider identity plus receipt/reference and quarantine conflicts.",
-                {"provider_receipt_sha256": hashlib.sha256(receipt.encode()).hexdigest(),
+                {"provider_receipt_scope_sha256": hashlib.sha256(f"{tenant_id}|{provider}|{provider_account}|{receipt}".encode()).hexdigest(),
                  "transaction_count": str(len(distinct))}))
     return out
 
@@ -153,8 +156,9 @@ def ledger_checks(entries: list[dict[str, Any]]) -> list[Finding]:
         return [_finding("ledger", "No ledger invariant fixture supplied", "high",
             "No synthetic journal entries were supplied.",
             "Run invariant checks against a disposable database snapshot or synthetic journal export.")]
-    groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    groups: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
     for index, entry in enumerate(entries):
+        tenant_id = str(entry.get("tenant_id", "synthetic-default"))
         txid = str(entry.get("transaction_id", ""))
         currency = str(entry.get("currency", "KES")).upper()
         if not txid:
@@ -167,9 +171,9 @@ def ledger_checks(entries: list[dict[str, Any]]) -> list[Finding]:
             out.append(_finding("ledger", "Ledger entry has an invalid currency code", "critical",
                 "A journal entry currency is missing or is not a three-letter code.",
                 "Require an ISO 4217 currency code and never combine entries across currencies.",
-                {"entry_index": str(index), "transaction_id_sha256": hashlib.sha256(txid.encode()).hexdigest()}))
+                {"entry_index": str(index), "transaction_id_sha256": hashlib.sha256(f"{tenant_id}|{txid}".encode()).hexdigest()}))
             continue
-        groups.setdefault((txid, currency), []).append(entry)
+        groups.setdefault((tenant_id, txid, currency), []).append(entry)
         try:
             amount = Decimal(str(entry.get("amount", "0")))
         except (InvalidOperation, ValueError):
@@ -184,7 +188,7 @@ def ledger_checks(entries: list[dict[str, Any]]) -> list[Finding]:
                 "A fixture indicates that a posted journal entry can be edited in place.",
                 "Make posted entries immutable; correct mistakes with linked compensating entries.",
                 {"transaction_id_sha256": hashlib.sha256(txid.encode()).hexdigest()}))
-    for (txid, currency), group in groups.items():
+    for (tenant_id, txid, currency), group in groups.items():
         debit = Decimal("0")
         credit = Decimal("0")
         valid = True
