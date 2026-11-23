@@ -1,4 +1,6 @@
-import hashlib\nfrom datetime import datetime, timezone\nfrom urllib.parse import urlparse
+import hashlib
+from datetime import datetime, timezone
+from urllib.parse import urlparse
 from uuid import uuid4
 from .config import settings
 from .models import AssessmentReport, CheckName, Finding, TargetAuthorization
