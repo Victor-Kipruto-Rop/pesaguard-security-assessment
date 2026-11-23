@@ -14,7 +14,12 @@ async def assess(auth: TargetAuthorization, requested_checks: list[CheckName]) -
     started = datetime.now(timezone.utc)
     findings: list[Finding] = []
     if CheckName.HTTP_HEADERS in requested_checks or CheckName.COOKIE_FLAGS in requested_checks:
-        findings.extend(await run_http_checks(auth, settings.http_timeout_seconds, settings.user_agent))
+        http_findings = await run_http_checks(auth, settings.http_timeout_seconds, settings.user_agent)
+        if CheckName.HTTP_HEADERS not in requested_checks:
+            http_findings = [item for item in http_findings if item.check == CheckName.COOKIE_FLAGS.value]
+        if CheckName.COOKIE_FLAGS not in requested_checks:
+            http_findings = [item for item in http_findings if item.check != CheckName.COOKIE_FLAGS.value]
+        findings.extend(http_findings)
     if CheckName.OPENAPI_EXPOSURE in requested_checks:
         findings.extend(await run_openapi_check(auth, settings.http_timeout_seconds, settings.user_agent))
     if CheckName.TLS in requested_checks:
