@@ -15,10 +15,12 @@ from .models import Finding
 
 def _finding(check: str, title: str, severity: str, description: str,
              recommendation: str, evidence: dict[str, str] | None = None,
-             confidence: str = "high") -> Finding:
+             confidence: str = "high", verified: bool | None = None) -> Finding:
+    if verified is None:
+        verified = confidence == "high"
     return Finding(check=check, title=title, severity=severity, confidence=confidence,
                    description=description, recommendation=recommendation,
-                   evidence=evidence or {})
+                   evidence=evidence or {}, verified=verified)
 
 
 def _bool(config: dict[str, Any], key: str) -> bool:
