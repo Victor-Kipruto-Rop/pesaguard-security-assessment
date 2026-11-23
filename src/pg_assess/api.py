@@ -1,6 +1,6 @@
 import hmac
 from fastapi import Depends, FastAPI, Header, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 from .config import settings
 from .engine import assess
 from .models import CheckName, TargetAuthorization
@@ -36,19 +36,24 @@ async def create_assessment(request: RunRequest):
     return {"report": report, "artifacts": {"json": json_path.name, "html": html_path.name}}
 
 
+class SourceFile(BaseModel):
+    path: str = Field(min_length=1, max_length=512)
+    content: str = Field(max_length=200_000)
+
 class BundleRequest(BaseModel):
-    assessment_target_id: str = "offline-bundle"
-    identity: dict = {}
-    tenancy_cases: list[dict] = []
-    transaction_cases: list[dict] = []
-    ledger_entries: list[dict] = []
-    daraja: dict = {}
-    daraja_callbacks: list[dict] = []
-    database: dict = {}
-    pipeline: dict = {}
-    pipeline_source_files: list[dict[str, str]] = []
-    infrastructure_files: list[dict[str, str]] = []
-    outbound_webhook: dict = {}
+    model_config = ConfigDict(extra="forbid")
+    assessment_target_id: str = Field(default="offline-bundle", min_length=3, max_length=100)
+    identity: dict = Field(default_factory=dict)
+    tenancy_cases: list[dict] = Field(default_factory=list, max_length=5000)
+    transaction_cases: list[dict] = Field(default_factory=list, max_length=5000)
+    ledger_entries: list[dict] = Field(default_factory=list, max_length=10000)
+    daraja: dict = Field(default_factory=dict)
+    daraja_callbacks: list[dict] = Field(default_factory=list, max_length=5000)
+    database: dict = Field(default_factory=dict)
+    pipeline: dict = Field(default_factory=dict)
+    pipeline_source_files: list[SourceFile] = Field(default_factory=list, max_length=200)
+    infrastructure_files: list[SourceFile] = Field(default_factory=list, max_length=200)
+    outbound_webhook: dict = Field(default_factory=dict)
 
 @app.post("/v1/bundle-assessments", dependencies=[Depends(require_key)])
 def create_bundle_assessment(request: BundleRequest):
