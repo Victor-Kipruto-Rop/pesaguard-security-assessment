@@ -84,8 +84,10 @@ def inspect_postgres_readonly(conninfo: str | None = None) -> dict:
             }
             return snapshot
         finally:
-            connection.rollback()
-            connection.close()
+            try:
+                connection.rollback()
+            finally:
+                connection.close()
     except Exception as exc:
         raise RuntimeError(
             f"Read-only database inspection failed ({type(exc).__name__})."
