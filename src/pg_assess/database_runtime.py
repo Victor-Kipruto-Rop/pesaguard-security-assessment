@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 from urllib.parse import parse_qs, urlparse
 
+
 def inspect_postgres_readonly(conninfo: str | None = None) -> dict:
     connection_string = conninfo or os.getenv("PG_ASSESS_DATABASE_URL", "")
     if not connection_string:
@@ -13,7 +14,11 @@ def inspect_postgres_readonly(conninfo: str | None = None) -> dict:
         raise ValueError("PG_ASSESS_DATABASE_URL must be a PostgreSQL connection URL.")
     host = parsed.hostname.lower()
     local_hosts = {"localhost", "127.0.0.1", "::1"}
-    allowed_hosts = {item.strip().lower() for item in os.getenv("PG_ASSESS_DATABASE_HOSTS", "").split(",") if item.strip()}
+    allowed_hosts = {
+        item.strip().lower()
+        for item in os.getenv("PG_ASSESS_DATABASE_HOSTS", "").split(",")
+        if item.strip()
+    }
     if host not in local_hosts and host not in allowed_hosts:
         raise ValueError("Database hostname is not in PG_ASSESS_DATABASE_HOSTS.")
     try:
@@ -47,8 +52,10 @@ def inspect_postgres_readonly(conninfo: str | None = None) -> dict:
             snapshot = {
                 "tls_required": bool(connection.info.ssl_in_use),
                 "sslmode": sslmode,
-                "application_role_not_superuser": not bool(superuser or create_role or create_db or replication),
-                "separate_migration_role": False,  # Cannot be proven from one live session; verify through role inventory.
+                "application_role_not_superuser": not bool(
+                    superuser or create_role or create_db or replication
+                ),
+                "separate_migration_role": False,
                 "public_schema_create_revoked": not bool(schema_create),
                 "backup_encryption_enabled": False,
                 "audit_logging_enabled": False,
@@ -56,11 +63,13 @@ def inspect_postgres_readonly(conninfo: str | None = None) -> dict:
                 "role_has_create_database": bool(db_create),
                 "role_has_create_schema": bool(schema_create),
                 "role_has_create_role": bool(create_role),
-                "role_has_replication": bool(replication),\n                "role_has_create_database": bool(db_create),\n                "role_has_create_schema": bool(schema_create),\n                "role_has_create_role": bool(create_role),
+                "role_has_replication": bool(replication),
             }
             return snapshot
         finally:
             connection.rollback()
             connection.close()
     except Exception as exc:
-        raise RuntimeError(f"Read-only database inspection failed ({type(exc).__name__}).") from None
+        raise RuntimeError(
+            f"Read-only database inspection failed ({type(exc).__name__})."
+        ) from None
