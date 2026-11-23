@@ -74,3 +74,28 @@ def assess_source(repo_root: Path = typer.Option(..., exists=True, file_okay=Fal
 
 if __name__ == "__main__":
     app()
+
+
+@app.command("assess-database")
+def assess_database(confirm_read_only: bool = typer.Option(False, "--confirm-read-only",
+        help="Confirm that the tool may open a read-only PostgreSQL session."),
+        output: Path = typer.Option(Path("reports"))):
+    """Inspect PostgreSQL role/TLS posture using a read-only transaction."""
+    if not confirm_read_only:
+        raise typer.BadParameter("Pass --confirm-read-only after confirming the target database is authorized.")
+    from .database_runtime import inspect_postgres_readonly
+    from .bundle import run_bundle
+    from .reporting import save_bundle_report
+    from .evidence import EvidenceStore
+    snapshot = inspect_postgres_readonly()
+    report, risk = run_bundle({"database": snapshot})
+    json_path, html_path = save_bundle_report(report, risk, str(output))
+    store = EvidenceStore(str(output / "evidence.sqlite3"))
+    store.append("database.read_only_assessment.completed", {
+        "assessment_id": report.assessment_id,
+        "risk_score": risk["score"],
+        "finding_count": risk["finding_count"],
+    })
+    print(f"[green]Read-only database assessment complete[/green] {report.assessment_id}")
+    print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
+    print(f"JSON: {json_path}\\nHTML: {html_path}")
