@@ -1,21 +1,31 @@
 # PesaGuard repository integration
 
-The source adapter is tailored to the current api.pesaguard layout. It reads a fixed allowlist under pesaguard_backend_pipeline/, including:
-
-- auth_rbac.py and authorization_policy.py
-- transaction_routes.py, event_store.py, and models.py
-- mpesa_operation_webhooks.py, mpesa_operation_service.py, and daraja_tenant_routing.py
-- validators.py, mpesa_configuration.py, and data_protection.py
-- etl_pipeline.py, lineage.py, and selected regression tests
+The source adapter is tailored to the current api.pesaguard layout. It reads a fixed allowlist under pesaguard_backend_pipeline/, including auth_rbac.py, authorization_policy.py, transaction_routes.py, event_store.py, models.py, the Daraja callback and tenant-routing modules, validators.py, mpesa_configuration.py, data_protection.py, etl_pipeline.py, lineage.py, and selected regression tests.
 
 It uses text indicators only. It does not import PesaGuard modules, evaluate Python code, open database connections, run migrations, call Daraja, or mutate application state.
 
-## Run against a local checkout
+## Static source review
 
-    git clone <your-private-api-repository-url> api.pesaguard
-    pg-assess assess-source --repo-root ./api.pesaguard
+    pg-assess assess-source --repo-root ../api.pesaguard
 
-The source audit surfaces implementation evidence and gaps. It is not a replacement for running the PesaGuard test suite. PostgreSQL concurrency tests may be marked opt-in and must be run only against a disposable database.
+## Import actual PesaGuard regression test results
+
+From the PesaGuard API checkout, run selected tests in the repository's documented isolated test environment:
+
+    pytest pesaguard_backend_pipeline/tests/test_auth_lifecycle.py \
+      pesaguard_backend_pipeline/tests/test_rbac_enforcement.py \
+      pesaguard_backend_pipeline/tests/test_tenant_scope_constraints.py \
+      pesaguard_backend_pipeline/tests/test_api_idempotency_contract.py \
+      pesaguard_backend_pipeline/tests/test_daraja_validation.py \
+      pesaguard_backend_pipeline/tests/test_daraja_tenant_routing.py \
+      --junitxml=../pesaguard-security-assessment/reports/pesaguard-security-tests.xml
+
+Then import the test results:
+
+    cd ../pesaguard-security-assessment
+    pg-assess import-junit --junit-file reports/pesaguard-security-tests.xml
+
+Do not point PesaGuard tests at production or a database containing customer data. PostgreSQL race tests are opt-in and must only use a disposable test database. The importer reads a bounded JUnit XML report; it does not execute tests. It deliberately omits failure output and stdout/stderr from reports because those may contain secrets or customer data.
 
 ## Existing code areas recognized
 
