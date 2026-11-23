@@ -6,7 +6,7 @@ The optional database adapter uses psycopg 3 and issues SELECT statements only. 
 
     pip install -e '.[db]'
 
-Set PG_ASSESS_DATABASE_URL in the local process environment. Do not paste connection strings into chat, source control, command history, or reports. For non-loopback databases, set PG_ASSESS_DATABASE_HOSTS to a comma-separated exact hostname allowlist.
+Set PG_ASSESS_DATABASE_URL in the local process environment. Do not paste connection strings into chat, source control, command history, or reports. For non-loopback databases, set PG_ASSESS_DATABASE_HOSTS to a comma-separated exact hostname allowlist and PG_ASSESS_DATABASE_IPS to exact host=IP mappings. Remote connections are pinned to the configured IP while libpq retains the hostname for TLS certificate verification.
 
 For remote staging PostgreSQL, use sslmode=verify-full with a trusted CA configuration. Do not use sslmode=disable or prefer for production-grade verification.
 
@@ -14,7 +14,7 @@ For remote staging PostgreSQL, use sslmode=verify-full with a trusted CA configu
 
     pg-assess assess-database --confirm-read-only
 
-The command refuses remote hosts not in the explicit allowlist. It never executes DDL, DML, migrations, or application queries. The report intentionally does not record the connection string, username, database name, or hostname.
+The command refuses remote hosts not in the explicit hostname and IP allowlists. It never executes DDL, DML, migrations, or application queries. The report intentionally does not record the connection string, username, database name, or hostname.
 
 ## What it checks
 
