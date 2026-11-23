@@ -48,7 +48,9 @@ def save_bundle_report(report: AssessmentReport, risk: dict, directory: str) -> 
         "table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:9px;text-align:left;vertical-align:top}"
         "th{background:#f1f5f2}code{overflow-wrap:anywhere}</style><h1>PesaGuard Security Assessment</h1>"
         "<h2>Risk prioritization: " + html.escape(str(risk.get("band"))) + " (" +
-        html.escape(str(risk.get("score"))) + "/100)</h2><p>" +
+        html.escape(str(risk.get("score"))) + "/100)</h2><p>Verified findings: " +
+        html.escape(str(risk.get("verified_findings", 0))) + " | Unverified or unconfirmed: " +
+        html.escape(str(risk.get("unverified_or_unconfirmed_findings", 0))) + "</p><p>" +
         html.escape(str(risk.get("method"))) + "</p><p>Assessment: " +
         html.escape(report.assessment_id) + "</p><p>Checks run: " +
         html.escape(", ".join(report.checks_run)) + "</p><table><thead><tr><th>Severity</th><th>Domain</th>"
