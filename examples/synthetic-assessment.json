@@ -10,7 +10,16 @@
     "csrf_protection": true,
     "audit_admin_actions": true,
     "access_token_ttl_seconds": 900,
-    "session_idle_timeout_minutes": 20
+    "session_idle_timeout_minutes": 20,
+    "jwt_issuer_audience_validated": true,
+    "jwt_key_rotation_enabled": true,
+    "refresh_token_reuse_detection": true,
+    "session_absolute_expiry": true,
+    "privilege_change_revokes_sessions": true,
+    "password_reset_single_use": true,
+    "sensitive_audit_fields_redacted": true,
+    "service_tokens_least_privilege": true,
+    "refresh_token_ttl_days": 30
   },
   "tenancy_cases": [
     {
