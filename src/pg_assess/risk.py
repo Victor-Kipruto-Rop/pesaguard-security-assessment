@@ -12,7 +12,9 @@ def score_findings(findings: Iterable[Finding]) -> dict:
                    for f in items)
     counts = Counter(f.severity.lower() for f in items)
     score = min(100, round(weighted * 2))
-    band = "critical" if score >= 70 else "high" if score >= 40 else "moderate" if score >= 15 else "low"
+    band = ("critical" if counts.get("critical", 0) else
+            "high" if counts.get("high", 0) else
+            "moderate" if counts.get("medium", 0) else "low")
     return {"score": score, "band": band, "finding_count": len(items),
             "severity_counts": dict(counts),
             "method": "sum(severity_weight × confidence_factor) × 2, capped at 100; prioritization only, not a probability."}
