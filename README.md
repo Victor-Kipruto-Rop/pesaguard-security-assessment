@@ -80,8 +80,9 @@ Run the optional read-only PostgreSQL inspector after installing the database ex
     pip install -e '.[db]'
     pg-assess assess-database --confirm-read-only
 
-Import PesaGuard JUnit results:
+Run the isolated PesaGuard regression suite (explicit approval required), then import its JUnit results:
 
+    PESAGUARD_SECURITY_TESTS_APPROVED=YES bash scripts/run_pesaguard_regression_tests.sh
     pg-assess import-junit --junit-file reports/pesaguard-security-tests.xml
 
 Verify the local evidence chain:
