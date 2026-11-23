@@ -35,7 +35,8 @@
       "case_id": "duplicate-receipt",
       "idempotency_key": "synthetic-key-002",
       "provider_receipt": "SYNTHETIC-RCP-001",
-      "transaction_id": "synthetic-tx-001"
+      "transaction_id": "synthetic-tx-001",
+      "response_fingerprint": "same-result-2"
     }
   ],
   "ledger_entries": [
