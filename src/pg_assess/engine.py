@@ -2,12 +2,24 @@ from datetime import datetime, timezone
 from uuid import uuid4
 from .config import settings
 from .models import AssessmentReport, CheckName, Finding, TargetAuthorization
-from .policy import validate_target
+from .policy import validate_target, PolicyError\nfrom .rate_limiter import TargetRateLimiter, RateLimitExceeded
 from .scanners.http import run_http_checks, run_openapi_check, run_tls_check
 
 async def assess(auth: TargetAuthorization, requested_checks: list[CheckName]) -> AssessmentReport:
     names = [c.value for c in requested_checks]
     validate_target(auth, names)
+    request_budget = 0
+    if CheckName.HTTP_HEADERS in requested_checks or CheckName.COOKIE_FLAGS in requested_checks:
+        request_budget += 1
+    if CheckName.OPENAPI_EXPOSURE in requested_checks:
+        request_budget += 2
+    if CheckName.TLS in requested_checks:
+        request_budget += 1
+    try:
+        limiter = TargetRateLimiter(f"{settings.assessment_data_dir}/rate-limits.sqlite3")
+        limiter.reserve(auth.target_id, request_budget, auth.max_requests_per_minute)
+    except RateLimitExceeded as exc:
+        raise PolicyError(str(exc)) from exc
     started = datetime.now(timezone.utc)
     findings: list[Finding] = []
     if CheckName.HTTP_HEADERS in requested_checks or CheckName.COOKIE_FLAGS in requested_checks:
