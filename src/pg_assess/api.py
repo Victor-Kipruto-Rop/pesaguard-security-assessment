@@ -26,7 +26,7 @@ async def assessment_body_limit(request: Request, call_next):
     return await call_next(request)
 
 def require_key(x_assessment_key: str | None = Header(default=None)):
-    if settings.assessment_api_key in {"", "change-me", "replace-with-a-long-random-local-key"}:
+    if len(settings.assessment_api_key) < 32 or settings.assessment_api_key in {"change-me", "replace-with-a-long-random-local-key"}:
         raise HTTPException(status_code=503, detail="Assessment API key is not configured securely.")
     if not x_assessment_key or not hmac.compare_digest(x_assessment_key, settings.assessment_api_key):
         raise HTTPException(status_code=401, detail="Valid assessment API key required.")
