@@ -57,3 +57,18 @@ def verify_evidence(database: Path = typer.Option(Path("reports/evidence.sqlite3
     if not result["valid"]:
         raise typer.Exit(code=2)
     print(f"[green]Evidence chain valid[/green] ({result['verified_events']} events)")
+
+
+@app.command("assess-source")
+def assess_source(repo_root: Path = typer.Option(..., exists=True, file_okay=False, readable=True,
+                                                 help="Local root of a PesaGuard API checkout."),
+                  output: Path = typer.Option(Path("reports"))):
+    """Statically inspect a PesaGuard source checkout without importing or executing it."""
+    from .source_audit import audit_source_tree
+    from .reporting import save_bundle_report
+    report, risk = audit_source_tree(repo_root)
+    json_path, html_path = save_bundle_report(report, risk, str(output))
+    print(f"[green]Static source audit complete[/green] {report.assessment_id}")
+    print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
+    print(f"Findings: {risk['finding_count']}")
+    print(f"JSON: {json_path}\\nHTML: {html_path}")
