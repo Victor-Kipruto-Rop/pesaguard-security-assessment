@@ -151,16 +151,23 @@ def ledger_checks(entries: list[dict[str, Any]]) -> list[Finding]:
         return [_finding("ledger", "No ledger invariant fixture supplied", "high",
             "No synthetic journal entries were supplied.",
             "Run invariant checks against a disposable database snapshot or synthetic journal export.")]
-    groups: dict[str, list[dict[str, Any]]] = {}
+    groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for index, entry in enumerate(entries):
         txid = str(entry.get("transaction_id", ""))
+        currency = str(entry.get("currency", "KES")).upper()
         if not txid:
             out.append(_finding("ledger", "Ledger entry has no transaction identifier", "high",
                 "A journal entry is missing its transaction grouping key.",
                 "Require immutable transaction identifiers and enforce foreign-key constraints.",
                 {"entry_index": str(index)}))
             continue
-        groups.setdefault(txid, []).append(entry)
+        if not re.fullmatch(r"[A-Z]{3}", currency):
+            out.append(_finding("ledger", "Ledger entry has an invalid currency code", "critical",
+                "A journal entry currency is missing or is not a three-letter code.",
+                "Require an ISO 4217 currency code and never combine entries across currencies.",
+                {"entry_index": str(index), "transaction_id_sha256": hashlib.sha256(txid.encode()).hexdigest()}))
+            continue
+        groups.setdefault((txid, currency), []).append(entry)
         try:
             amount = Decimal(str(entry.get("amount", "0")))
         except (InvalidOperation, ValueError):
@@ -175,7 +182,7 @@ def ledger_checks(entries: list[dict[str, Any]]) -> list[Finding]:
                 "A fixture indicates that a posted journal entry can be edited in place.",
                 "Make posted entries immutable; correct mistakes with linked compensating entries.",
                 {"transaction_id_sha256": hashlib.sha256(txid.encode()).hexdigest()}))
-    for txid, group in groups.items():
+    for (txid, currency), group in groups.items():
         debit = Decimal("0")
         credit = Decimal("0")
         valid = True
@@ -196,7 +203,7 @@ def ledger_checks(entries: list[dict[str, Any]]) -> list[Finding]:
                 "Debits and credits are unequal or one or more journal sides are invalid.",
                 "Post journal entries atomically and enforce total debits equal total credits per currency and transaction.",
                 {"transaction_id_sha256": hashlib.sha256(txid.encode()).hexdigest(),
-                 "debit_total": str(debit), "credit_total": str(credit)}))
+                 "currency": currency, "debit_total": str(debit), "credit_total": str(credit)}))
     return out
 
 
