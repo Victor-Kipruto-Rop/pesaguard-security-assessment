@@ -57,3 +57,11 @@ def test_downstream_webhook_requires_signing_and_replay_window():
     titles = [f.title for f in outbound_webhook_checks({})]
     assert any("signing" in title.lower() for title in titles)
     assert any("replay" in title.lower() for title in titles)
+
+
+def test_ledger_does_not_net_different_currencies():
+    findings = ledger_checks([
+        {"transaction_id":"fx-tx","side":"debit","amount":"100","currency":"KES"},
+        {"transaction_id":"fx-tx","side":"credit","amount":"100","currency":"USD"},
+    ])
+    assert len([f for f in findings if "balanced" in f.title.lower()]) == 2
