@@ -70,7 +70,7 @@ def audit_source_tree(repo_root: str | Path) -> tuple[AssessmentReport, dict]:
         ("absolute_expires_at", "Absolute session expiry enforcement is not visible", "medium", "Enforce both idle and absolute session expiry."),
     ]:
         _check(findings, "identity", sources["auth"], str(FILES["auth"]), indicator, title, severity, recommendation)
-    for indicator in ("deny by default", "wildcard_rejected", "unknown_permission"):
+    for indicator in ("Deny by default", "wildcard_rejected", "unknown_permission"):
         _check(findings, "identity", sources["policy"], str(FILES["policy"]), indicator,
                f"Authorization policy indicator missing: {indicator}", "high",
                "Reject unknown, wildcard, and internal scopes unless explicitly granted.")
