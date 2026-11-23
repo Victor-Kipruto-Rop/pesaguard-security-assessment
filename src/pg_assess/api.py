@@ -1,5 +1,5 @@
 import hmac
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request\nfrom fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 from .config import settings
 from .engine import assess
@@ -9,6 +9,20 @@ from .reporting import save_report, save_bundle_report\nfrom .bundle import run_
 
 app = FastAPI(title="PesaGuard Security Assessment", version="0.1.0",
     description="Authorized, bounded, non-destructive security checks.")
+
+@app.middleware("http")
+async def assessment_body_limit(request: Request, call_next):
+    if request.method == "POST" and request.url.path in {"/v1/assessments", "/v1/bundle-assessments"}:
+        raw_length = request.headers.get("content-length")
+        if raw_length is None:
+            return JSONResponse(status_code=411, content={"detail": "Content-Length is required."})
+        try:
+            length = int(raw_length)
+        except ValueError:
+            return JSONResponse(status_code=400, content={"detail": "Invalid Content-Length."})
+        if length < 0 or length > 5_000_000:
+            return JSONResponse(status_code=413, content={"detail": "Assessment request exceeds the 5 MB limit."})
+    return await call_next(request)
 
 def require_key(x_assessment_key: str | None = Header(default=None)):
     if settings.assessment_api_key in {"", "change-me", "replace-with-a-long-random-local-key"}:
@@ -47,7 +61,7 @@ async def create_assessment(request: RunRequest):
 
 class SourceFile(BaseModel):
     path: str = Field(min_length=1, max_length=512)
-    content: str = Field(max_length=200_000)
+    content: str = Field(max_length=100_000)
 
 class BundleRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -60,8 +74,8 @@ class BundleRequest(BaseModel):
     daraja_callbacks: list[dict] = Field(default_factory=list, max_length=5000)
     database: dict = Field(default_factory=dict)
     pipeline: dict = Field(default_factory=dict)
-    pipeline_source_files: list[SourceFile] = Field(default_factory=list, max_length=200)
-    infrastructure_files: list[SourceFile] = Field(default_factory=list, max_length=200)
+    pipeline_source_files: list[SourceFile] = Field(default_factory=list, max_length=20)
+    infrastructure_files: list[SourceFile] = Field(default_factory=list, max_length=20)
     outbound_webhook: dict = Field(default_factory=dict)
 
 @app.post("/v1/bundle-assessments", dependencies=[Depends(require_key)])
