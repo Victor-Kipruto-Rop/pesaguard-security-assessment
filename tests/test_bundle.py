@@ -7,7 +7,7 @@ def test_bundle_reports_only_supplied_domains():
         "tenancy_cases":[{"case_id":"bad","expected_allowed":False,"observed_allowed":True}]})
     assert report.checks_run == ["tenancy"]
     assert report.findings[0].severity == "critical"
-    assert risk["band"] == "moderate" or risk["band"] == "high" or risk["band"] == "critical"
+    assert risk["band"] == "critical"
 
 def test_risk_score_is_bounded():
     findings = [Finding(check="x", title="x", severity="critical", confidence="high",
