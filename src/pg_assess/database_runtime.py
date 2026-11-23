@@ -47,8 +47,8 @@ def inspect_postgres_readonly(conninfo: str | None = None) -> dict:
             snapshot = {
                 "tls_required": bool(connection.info.ssl_in_use),
                 "sslmode": sslmode,
-                "application_role_not_superuser": not bool(superuser),
-                "separate_migration_role": not bool(db_create or schema_create or create_role or create_db),
+                "application_role_not_superuser": not bool(superuser or create_role or create_db or replication),
+                "separate_migration_role": False,  # Cannot be proven from one live session; verify through role inventory.
                 "public_schema_create_revoked": not bool(schema_create),
                 "backup_encryption_enabled": False,
                 "audit_logging_enabled": False,
@@ -56,7 +56,7 @@ def inspect_postgres_readonly(conninfo: str | None = None) -> dict:
                 "role_has_create_database": bool(db_create),
                 "role_has_create_schema": bool(schema_create),
                 "role_has_create_role": bool(create_role),
-                "role_has_replication": bool(replication),
+                "role_has_replication": bool(replication),\n                "role_has_create_database": bool(db_create),\n                "role_has_create_schema": bool(schema_create),\n                "role_has_create_role": bool(create_role),
             }
             return snapshot
         finally:
