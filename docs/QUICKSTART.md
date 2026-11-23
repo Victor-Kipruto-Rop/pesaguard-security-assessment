@@ -27,17 +27,33 @@ Create authorization.local.json locally; do not commit actual approval records.
       "active": true
     }
 
-Replace timestamps with the real approval window. Run:
+Replace timestamps with the real approval window. Then run:
 
     pg-assess run --authorization-file authorization.local.json
     pytest -q
+
+## Staging authorization
+Set ASSESSMENT_ALLOWED_STAGING_HOSTS to a comma-separated exact hostname allowlist in the assessor's environment. Add approved_ip_addresses to the staging manifest, containing the exact IP address or addresses approved by the system owner. The scanner connects to those IPs directly and validates the TLS certificate against the hostname. Do not use broad wildcard domains.
+
+## Offline PesaGuard assessment
+Run the synthetic example bundle:
+
+    pg-assess assess-bundle --bundle-file examples/synthetic-assessment.json
+
+Inspect the JSON/HTML reports and verify the local evidence chain:
+
+    pg-assess verify-evidence --database reports/evidence.sqlite3
+
+For a local PesaGuard API checkout:
+
+    pg-assess assess-source --repo-root ../api.pesaguard
 
 ## API
 Start locally with:
 
     uvicorn pg_assess.api:app --host 127.0.0.1 --port 8080
 
-POST /v1/assessments with the authorization manifest and checks array. Supply X-Assessment-Key. Keep the service bound to loopback unless a separately reviewed deployment includes TLS, authentication, network restrictions, and audit controls.
+POST /v1/assessments with the authorization manifest and checks array. Supply X-Assessment-Key. POST /v1/bundle-assessments with sanitized snapshots and synthetic fixture observations. Keep the service bound to loopback unless a separately reviewed deployment includes TLS, authentication, network restrictions, request-size limits, and audit controls.
 
 ## Docker
     cp .env.example .env
