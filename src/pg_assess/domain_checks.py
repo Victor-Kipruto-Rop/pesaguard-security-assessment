@@ -38,6 +38,14 @@ def identity_checks(config: dict[str, Any]) -> list[Finding]:
         "secure_cookie_flags": "Set Secure, HttpOnly, and an appropriate SameSite policy on session cookies.",
         "csrf_protection": "Protect cookie-authenticated state-changing requests against CSRF.",
         "audit_admin_actions": "Record attributable, tamper-resistant audit events for privileged actions.",
+        "jwt_issuer_audience_validated": "Validate JWT issuer and audience on every token verification.",
+        "jwt_key_rotation_enabled": "Use managed signing-key rotation with key identifiers and a documented rollover process.",
+        "refresh_token_reuse_detection": "Detect reuse of rotated refresh tokens and revoke the affected token family.",
+        "session_absolute_expiry": "Enforce an absolute session expiry in addition to the idle timeout.",
+        "privilege_change_revokes_sessions": "Revoke sessions or advance authorization versions after role or permission changes.",
+        "password_reset_single_use": "Make password reset tokens short-lived, single-use, and bound to the intended account.",
+        "sensitive_audit_fields_redacted": "Redact credentials, bearer tokens, payment references, and personal data from audit logs.",
+        "service_tokens_least_privilege": "Use short-lived service identities with explicit audience and narrow scopes.",
     }
     for key, recommendation in required_true.items():
         if not _bool(config, key):
@@ -46,11 +54,17 @@ def identity_checks(config: dict[str, Any]) -> list[Finding]:
                 recommendation, {"control": key, "configured": str(config.get(key, "missing"))},
                 "medium"))
     ttl = config.get("access_token_ttl_seconds")
-    if not isinstance(ttl, int) or ttl <= 0 or ttl > 3600:
+    if not isinstance(ttl, int) or ttl <= 0 or ttl > 900:
         out.append(_finding("identity", "Access-token lifetime is missing or excessive", "medium",
-            "The access token TTL is absent, invalid, or greater than one hour.",
+            "The access token TTL is absent, invalid, or greater than 15 minutes.",
             "Use short-lived access tokens and a documented refresh lifecycle.",
             {"access_token_ttl_seconds": str(ttl)}))
+    refresh_days = config.get("refresh_token_ttl_days")
+    if not isinstance(refresh_days, int) or refresh_days <= 0 or refresh_days > 30:
+        out.append(_finding("identity", "Refresh-token lifetime is missing or excessive", "medium",
+            "The refresh token TTL is absent, invalid, or greater than 30 days.",
+            "Use a bounded refresh lifetime with rotation and reuse detection.",
+            {"refresh_token_ttl_days": str(refresh_days)}, "medium"))
     idle = config.get("session_idle_timeout_minutes")
     if not isinstance(idle, int) or idle <= 0 or idle > 60:
         out.append(_finding("identity", "Session idle timeout is not bounded", "medium",
