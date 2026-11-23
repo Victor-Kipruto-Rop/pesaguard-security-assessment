@@ -8,8 +8,14 @@ Only assess assets owned by the operator or covered by written authorization. Ev
 - Staging: HTTPS only. The exact hostname must be listed in ASSESSMENT_ALLOWED_STAGING_HOSTS and one or more approved destination IP addresses must be supplied in the manifest. Connections are pinned to the approved IP, while TLS hostname verification still uses the authorized hostname. DNS is not re-resolved by the scanner.
 - Production: blocked by this release.
 
+## Active scan limits
+- The scanner sends only bounded GET requests and never follows redirects.
+- Each target has a persistent per-minute request quota shared across CLI/API runs using the same assessment data directory.
+- HTTP timeouts are bounded to 1..20 seconds.
+- OpenAPI checks read response headers only; they do not download or parse arbitrary schema bodies.
+
 ## Prohibited actions
-No credential stuffing or brute force, exploitation, persistence, destructive payloads, denial of service, lateral movement, data extraction, real-money transactions, or changes to real ledger/customer data. Redirects are not followed. Do not add arbitrary target discovery or unbounded port scanning.
+No credential stuffing or brute force, exploitation, persistence, destructive payloads, denial of service, lateral movement, data extraction, real-money transactions, or changes to real ledger/customer data. Do not add arbitrary target discovery or unbounded port scanning.
 
 ## Operational controls
 Use dedicated test accounts, short-lived credentials, outbound network controls, a low request rate, a defined maintenance window, and a human operator able to stop the run. Stop on unexpected load, errors, sensitive data exposure, or activity outside scope.
