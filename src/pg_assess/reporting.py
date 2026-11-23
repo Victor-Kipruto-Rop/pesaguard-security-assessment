@@ -25,3 +25,34 @@ def save_report(report: AssessmentReport, directory: str) -> tuple[Path, Path]:
         "</tbody></table></html>")
     html_path.write_text(page, encoding="utf-8")
     return json_path, html_path
+
+
+def save_bundle_report(report: AssessmentReport, risk: dict, directory: str) -> tuple[Path, Path]:
+    import json
+    import html
+    from pathlib import Path
+    root = Path(directory)
+    root.mkdir(parents=True, exist_ok=True)
+    json_path = root / f"{report.assessment_id}.json"
+    html_path = root / f"{report.assessment_id}.html"
+    payload = {"report": report.model_dump(mode="json"), "risk": risk}
+    json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    rows = "".join(
+        "<tr><td>" + html.escape(f.severity) + "</td><td>" + html.escape(f.check) +
+        "</td><td>" + html.escape(f.title) + "</td><td>" + html.escape(f.description) +
+        "</td><td>" + html.escape(f.recommendation) + "</td></tr>"
+        for f in report.findings
+    )
+    page = ("<!doctype html><html lang='en'><meta charset='utf-8'><meta name='viewport' content='width=device-width'>"
+        "<title>PesaGuard security assessment</title><style>body{font:15px system-ui;max-width:1200px;margin:36px auto;padding:0 20px;color:#17231d}"
+        "table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:9px;text-align:left;vertical-align:top}"
+        "th{background:#f1f5f2}code{overflow-wrap:anywhere}</style><h1>PesaGuard Security Assessment</h1>"
+        "<h2>Risk prioritization: " + html.escape(str(risk.get("band"))) + " (" +
+        html.escape(str(risk.get("score"))) + "/100)</h2><p>" +
+        html.escape(str(risk.get("method"))) + "</p><p>Assessment: " +
+        html.escape(report.assessment_id) + "</p><p>Checks run: " +
+        html.escape(", ".join(report.checks_run)) + "</p><table><thead><tr><th>Severity</th><th>Domain</th>"
+        "<th>Finding</th><th>Description</th><th>Recommendation</th></tr></thead><tbody>" +
+        rows + "</tbody></table></html>")
+    html_path.write_text(page, encoding="utf-8")
+    return json_path, html_path
