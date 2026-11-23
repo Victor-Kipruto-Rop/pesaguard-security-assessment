@@ -53,7 +53,7 @@ def assess_bundle(bundle_file: Path = typer.Option(..., exists=True, readable=Tr
     print(f"[green]Offline assessment complete[/green] {report.assessment_id}")
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
     print(f"Findings: {risk['finding_count']}")
-    print(f"JSON: {json_path}\\nHTML: {html_path}")
+    print(f"JSON: {json_path}\nHTML: {html_path}")
     print(f"Evidence chain event: {event['sequence']}")
 
 @app.command("verify-evidence")
@@ -84,7 +84,7 @@ def assess_source(repo_root: Path = typer.Option(..., exists=True, file_okay=Fal
     print(f"[green]Static source audit complete[/green] {report.assessment_id}")
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
     print(f"Findings: {risk['finding_count']}")
-    print(f"JSON: {json_path}\\nHTML: {html_path}")
+    print(f"JSON: {json_path}\nHTML: {html_path}")
 
 
 
@@ -110,7 +110,7 @@ def assess_database(confirm_read_only: bool = typer.Option(False, "--confirm-rea
     })
     print(f"[green]Read-only database assessment complete[/green] {report.assessment_id}")
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
-    print(f"JSON: {json_path}\\nHTML: {html_path}")
+    print(f"JSON: {json_path}\nHTML: {html_path}")
 
 
 
@@ -133,7 +133,7 @@ def import_junit_report(junit_file: Path = typer.Option(..., exists=True, readab
     print(f"[green]JUnit results imported[/green] {report.assessment_id}")
     print(f"Tests: {risk['test_counts']}")
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
-    print(f"JSON: {json_path}\\nHTML: {html_path}")
+    print(f"JSON: {json_path}\nHTML: {html_path}")
 
 if __name__ == "__main__":
     app()
