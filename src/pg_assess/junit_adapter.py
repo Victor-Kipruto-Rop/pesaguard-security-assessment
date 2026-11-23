@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
-import xml.etree.ElementTree as ET
+from defusedxml import ElementTree as ET
 
 from .models import AssessmentReport, Environment, Finding
 from .risk import score_findings
