@@ -147,7 +147,7 @@ def transaction_checks(cases: list[dict[str, Any]]) -> list[Finding]:
             out.append(_finding("transactions", "Malformed transaction test observation", "medium",
                 "Side-effect and concurrent-write counts must be non-negative integers.",
                 "Normalize test adapter counters to integers before producing the assessment bundle.",
-                {"case_id": str(case.get("case_id", ""))[:80]}))
+                {"case_ref": _ref_hash(case.get("case_id", ""))}))
             continue
         if side_effects > 1:
             out.append(_finding("transactions", "Duplicate request caused multiple side effects", "critical",
