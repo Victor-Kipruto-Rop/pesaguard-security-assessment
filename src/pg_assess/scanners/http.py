@@ -130,6 +130,12 @@ async def run_openapi_check(auth: TargetAuthorization, timeout: float, user_agen
 def run_tls_check(auth: TargetAuthorization, timeout: float) -> Finding:
     parsed = urlparse(str(auth.base_url))
     host = parsed.hostname or ""
+    if parsed.scheme != "https":
+        return Finding(check="tls", title="TLS check not applicable to HTTP target",
+            severity="info", confidence="high",
+            description="The authorized local target uses HTTP; TLS is required for staging targets.",
+            evidence={"scheme": parsed.scheme},
+            recommendation="Use HTTPS for staging assessments. Local loopback HTTP is permitted for development.")
     port = parsed.port or 443
     address = approved_address(auth)
     try:
