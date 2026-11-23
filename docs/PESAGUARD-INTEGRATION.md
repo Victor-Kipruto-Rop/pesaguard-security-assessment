@@ -10,15 +10,11 @@ It uses text indicators only. It does not import PesaGuard modules, evaluate Pyt
 
 ## Import actual PesaGuard regression test results
 
-From the PesaGuard API checkout, run selected tests in the repository's documented isolated test environment:
+From the security-assessment checkout, explicitly approve the isolated test runner. It checks the API checkout, clears inherited deployment credentials, and relies on PesaGuard's test conftest to create a temporary SQLite database. PostgreSQL race tests are not enabled:
 
-    pytest pesaguard_backend_pipeline/tests/test_auth_lifecycle.py \
-      pesaguard_backend_pipeline/tests/test_rbac_enforcement.py \
-      pesaguard_backend_pipeline/tests/test_tenant_scope_constraints.py \
-      pesaguard_backend_pipeline/tests/test_api_idempotency_contract.py \
-      pesaguard_backend_pipeline/tests/test_daraja_validation.py \
-      pesaguard_backend_pipeline/tests/test_daraja_tenant_routing.py \
-      --junitxml=../pesaguard-security-assessment/reports/pesaguard-security-tests.xml
+    PESAGUARD_SECURITY_TESTS_APPROVED=YES bash scripts/run_pesaguard_regression_tests.sh
+
+If the API checkout is not the sibling directory ../api.pesaguard, set PESAGUARD_API_REPO to its local path. The runner creates reports/pesaguard-security-tests.xml.
 
 Then import the test results:
 
