@@ -11,6 +11,8 @@ app = FastAPI(title="PesaGuard Security Assessment", version="0.1.0",
     description="Authorized, bounded, non-destructive security checks.")
 
 def require_key(x_assessment_key: str | None = Header(default=None)):
+    if settings.assessment_api_key in {"", "change-me", "replace-with-a-long-random-local-key"}:
+        raise HTTPException(status_code=503, detail="Assessment API key is not configured securely.")
     if not x_assessment_key or not hmac.compare_digest(x_assessment_key, settings.assessment_api_key):
         raise HTTPException(status_code=401, detail="Valid assessment API key required.")
 
