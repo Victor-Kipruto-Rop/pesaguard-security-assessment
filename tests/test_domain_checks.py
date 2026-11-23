@@ -80,3 +80,14 @@ def test_ledger_transaction_ids_are_scoped_by_tenant():
         {"tenant_id":"tenant-b","transaction_id":"shared-id","side":"credit","amount":"10","currency":"KES"},
     ])
     assert len([f for f in findings if "balanced" in f.title.lower()]) == 2
+
+
+def test_infrastructure_checks_flag_privileged_root_and_mutable_image():
+    findings = infrastructure_checks([{
+        "path":"deployment.yaml",
+        "content":"privileged: true\nrunAsUser: 0\nrunAsNonRoot: false\nimage: api:latest\n"
+    }])
+    titles = [f.title for f in findings]
+    assert any("privileged" in title.lower() for title in titles)
+    assert any("root" in title.lower() for title in titles)
+    assert any("latest" in title.lower() for title in titles)
