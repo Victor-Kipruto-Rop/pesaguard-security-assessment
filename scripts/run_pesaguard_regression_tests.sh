@@ -11,7 +11,7 @@ if [[ "${PESAGUARD_SECURITY_TESTS_APPROVED:-}" != "YES" ]]; then
   exit 2
 fi
 
-if [[ ! -d "$API_REPO/.git" ]]; then
+if [[ ! -e "$API_REPO/.git" ]]; then
   echo "PESAGUARD_API_REPO must point to a local PesaGuard API Git checkout."
   exit 2
 fi
