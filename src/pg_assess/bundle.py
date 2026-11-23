@@ -5,7 +5,7 @@ from uuid import uuid4
 from typing import Any
 from .domain_checks import (database_checks, daraja_checks, identity_checks, infrastructure_checks,
     ledger_checks, outbound_webhook_checks, pipeline_checks, tenancy_checks, transaction_checks)
-from .models import AssessmentReport, Environment
+from .models import AssessmentReport, Environment, Finding
 from .risk import score_findings
 
 DOMAINS = ("identity", "tenancy_cases", "transaction_cases", "ledger_entries", "daraja",
@@ -59,7 +59,7 @@ def run_bundle(bundle: dict[str, Any]) -> tuple[AssessmentReport, dict[str, Any]
             findings.extend(runner())
             checks.append(name)
     if not checks:
-        findings.append(__import__("pg_assess.models", fromlist=["Finding"]).Finding(
+        findings.append(Finding(
             check="coverage", title="Assessment bundle contains no domains", severity="high",
             confidence="high", description="No assessment domain was supplied; no security controls were evaluated.",
             recommendation="Supply sanitized snapshots or synthetic observations for the domains in docs/DOMAIN-ADAPTERS.md.",
