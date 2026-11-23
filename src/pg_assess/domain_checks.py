@@ -54,23 +54,23 @@ def identity_checks(config: dict[str, Any]) -> list[Finding]:
                 recommendation, {"control": key, "configured": str(config.get(key, "missing"))},
                 "medium"))
     ttl = config.get("access_token_ttl_seconds")
-    if not isinstance(ttl, int) or ttl <= 0 or ttl > 900:
+    if isinstance(ttl, bool) or not isinstance(ttl, int) or ttl <= 0 or ttl > 900:
         out.append(_finding("identity", "Access-token lifetime is missing or excessive", "medium",
             "The access token TTL is absent, invalid, or greater than 15 minutes.",
             "Use short-lived access tokens and a documented refresh lifecycle.",
-            {"access_token_ttl_seconds": str(ttl)}))
+            {"access_token_ttl_seconds": str(ttl)}, "medium"))
     refresh_days = config.get("refresh_token_ttl_days")
-    if not isinstance(refresh_days, int) or refresh_days <= 0 or refresh_days > 30:
+    if isinstance(refresh_days, bool) or not isinstance(refresh_days, int) or refresh_days <= 0 or refresh_days > 30:
         out.append(_finding("identity", "Refresh-token lifetime is missing or excessive", "medium",
             "The refresh token TTL is absent, invalid, or greater than 30 days.",
             "Use a bounded refresh lifetime with rotation and reuse detection.",
             {"refresh_token_ttl_days": str(refresh_days)}, "medium"))
     idle = config.get("session_idle_timeout_minutes")
-    if not isinstance(idle, int) or idle <= 0 or idle > 60:
+    if isinstance(idle, bool) or not isinstance(idle, int) or idle <= 0 or idle > 60:
         out.append(_finding("identity", "Session idle timeout is not bounded", "medium",
             "The supplied idle timeout is missing or exceeds 60 minutes.",
             "Set a risk-appropriate idle timeout and enforce an absolute session lifetime.",
-            {"session_idle_timeout_minutes": str(idle)}))
+            {"session_idle_timeout_minutes": str(idle)}, "medium"))
     if not config:
         out.append(_finding("identity", "Identity configuration snapshot is empty", "high",
             "No identity controls were supplied for review.",
