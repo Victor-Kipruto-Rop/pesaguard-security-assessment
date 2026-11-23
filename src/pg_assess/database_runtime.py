@@ -42,12 +42,13 @@ def inspect_postgres_readonly(conninfo: str | None = None) -> dict:
         raise RuntimeError("Install the optional database extra: pip install '.[db]'.") from exc
     sslmode = parse_qs(parsed.query).get("sslmode", [""])[0]
     try:
-        connection = psycopg.connect(
-            connection_string,
-            hostaddr=hostaddr,
-            connect_timeout=5,
-            options="-c statement_timeout=5000 -c lock_timeout=1000",
-        )
+        connect_options = {
+            "connect_timeout": 5,
+            "options": "-c statement_timeout=5000 -c lock_timeout=1000",
+        }
+        if hostaddr:
+            connect_options["hostaddr"] = hostaddr
+        connection = psycopg.connect(connection_string, **connect_options)
         try:
             connection.execute("SET TRANSACTION READ ONLY")
             read_only = connection.execute(
