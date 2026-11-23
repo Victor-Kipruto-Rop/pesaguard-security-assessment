@@ -108,10 +108,21 @@ def transaction_checks(cases: list[dict[str, Any]]) -> list[Finding]:
         provider_account = str(case.get("provider_account_id", "synthetic-account"))
         key = str(case.get("idempotency_key", ""))
         receipt = str(case.get("provider_receipt", ""))
-        if key:
+        if not key or (key and not case.get("response_fingerprint")):
+            out.append(_finding("transactions", "Transaction fixture is missing idempotency evidence", "medium",
+                "Each idempotency observation must include an idempotency key and response fingerprint.",
+                "Record the tenant-scoped idempotency key and a non-sensitive fingerprint of the stable response.",
+                {"case_id": str(case.get("case_id", ""))[:80]}, "medium"))
+        else:
             key_groups.setdefault((tenant_id, key), []).append(case)
         if receipt:
-            receipt_groups.setdefault((tenant_id, provider, provider_account, receipt), []).append(case)
+            if not case.get("transaction_id"):
+                out.append(_finding("transactions", "Provider receipt fixture has no transaction ID", "medium",
+                    "A provider receipt observation is missing its internal transaction identifier.",
+                    "Record the synthetic internal transaction ID associated with each provider receipt.",
+                    {"case_id": str(case.get("case_id", ""))[:80]}, "medium"))
+            else:
+                receipt_groups.setdefault((tenant_id, provider, provider_account, receipt), []).append(case)
         side_effects = _safe_count(case.get("side_effect_count", 0))
         concurrent_writes = _safe_count(case.get("concurrent_duplicate_writes", 0))
         if side_effects is None or concurrent_writes is None:
@@ -182,7 +193,7 @@ def ledger_checks(entries: list[dict[str, Any]]) -> list[Finding]:
             out.append(_finding("ledger", "Ledger entry amount is invalid", "critical",
                 "A journal entry has a non-positive, non-finite, or invalid amount.",
                 "Reject invalid monetary values and use fixed-precision decimal arithmetic.",
-                {"transaction_id_sha256": hashlib.sha256(txid.encode()).hexdigest()}))
+                {"transaction_id_scope_sha256": hashlib.sha256(f"{tenant_id}|{txid}".encode()).hexdigest()}))
         if entry.get("status") == "posted" and entry.get("mutable_after_posting") is True:
             out.append(_finding("ledger", "Posted ledger entry is mutable", "critical",
                 "A fixture indicates that a posted journal entry can be edited in place.",
@@ -208,7 +219,7 @@ def ledger_checks(entries: list[dict[str, Any]]) -> list[Finding]:
             out.append(_finding("ledger", "Journal transaction is not balanced", "critical",
                 "Debits and credits are unequal or one or more journal sides are invalid.",
                 "Post journal entries atomically and enforce total debits equal total credits per currency and transaction.",
-                {"transaction_id_sha256": hashlib.sha256(txid.encode()).hexdigest(),
+                {"transaction_id_scope_sha256": hashlib.sha256(f"{tenant_id}|{txid}".encode()).hexdigest(),
                  "currency": currency, "debit_total": str(debit), "credit_total": str(credit)}))
     return out
 
