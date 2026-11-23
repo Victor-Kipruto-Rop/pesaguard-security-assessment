@@ -5,7 +5,7 @@ Only assess assets owned by the operator or covered by written authorization. Ev
 
 ## Environment restrictions
 - Local: HTTP is permitted only for loopback addresses (localhost, 127.0.0.1, ::1).
-- Staging: HTTPS only. Enroll the exact staging hostname and use synthetic accounts and fixtures.
+- Staging: HTTPS only. The exact hostname must be listed in ASSESSMENT_ALLOWED_STAGING_HOSTS and one or more approved destination IP addresses must be supplied in the manifest. Connections are pinned to the approved IP, while TLS hostname verification still uses the authorized hostname. DNS is not re-resolved by the scanner.
 - Production: blocked by this release.
 
 ## Prohibited actions
