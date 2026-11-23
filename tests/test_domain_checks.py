@@ -65,3 +65,18 @@ def test_ledger_does_not_net_different_currencies():
         {"transaction_id":"fx-tx","side":"credit","amount":"100","currency":"USD"},
     ])
     assert len([f for f in findings if "balanced" in f.title.lower()]) == 2
+
+
+def test_idempotency_keys_are_scoped_by_tenant():
+    findings = transaction_checks([
+        {"tenant_id":"tenant-a","idempotency_key":"same-key","response_fingerprint":"result-a"},
+        {"tenant_id":"tenant-b","idempotency_key":"same-key","response_fingerprint":"result-b"},
+    ])
+    assert not any("inconsistent outcomes" in f.title.lower() for f in findings)
+
+def test_ledger_transaction_ids_are_scoped_by_tenant():
+    findings = ledger_checks([
+        {"tenant_id":"tenant-a","transaction_id":"shared-id","side":"debit","amount":"10","currency":"KES"},
+        {"tenant_id":"tenant-b","transaction_id":"shared-id","side":"credit","amount":"10","currency":"KES"},
+    ])
+    assert len([f for f in findings if "balanced" in f.title.lower()]) == 2
