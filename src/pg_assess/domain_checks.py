@@ -259,6 +259,24 @@ def database_checks(config: dict[str, Any]) -> list[Finding]:
             "The configured SSL mode is not verify-ca or verify-full.",
             "Use certificate-verifying TLS modes and a trusted CA bundle.",
             {"sslmode": str(config.get("sslmode", "missing"))}))
+    for key, title, recommendation in [
+        ("role_has_create_database", "Application database role can create databases",
+         "Remove CREATEDB from the runtime application role."),
+        ("role_has_create_role", "Application database role can create roles",
+         "Remove CREATEROLE from the runtime application role."),
+        ("role_has_replication", "Application database role has replication privilege",
+         "Remove REPLICATION from the runtime application role unless it is a dedicated replication identity."),
+        ("role_has_create_schema", "Application database role can create objects in public schema",
+         "Revoke CREATE on public from the runtime role."),
+    ]:
+        if _bool(config, key):
+            out.append(_finding("database", title, "critical",
+                "The read-only role inspection found an elevated database privilege.",
+                recommendation, {"privilege": key}))
+    if config.get("read_only_transaction_enforced") is False:
+        out.append(_finding("database", "Database inspection transaction was not read-only", "critical",
+            "The database inspection did not confirm read-only transaction mode.",
+            "Abort database inspection unless PostgreSQL confirms transaction_read_only=on."))
     return out
 
 
