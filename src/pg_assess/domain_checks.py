@@ -87,6 +87,11 @@ def tenancy_checks(cases: list[dict[str, Any]]) -> list[Finding]:
     return out
 
 
+def _safe_count(value: Any) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return None
+    return value
+
 def transaction_checks(cases: list[dict[str, Any]]) -> list[Finding]:
     out: list[Finding] = []
     if not cases:
@@ -102,13 +107,21 @@ def transaction_checks(cases: list[dict[str, Any]]) -> list[Finding]:
             key_groups.setdefault(key, []).append(case)
         if receipt:
             receipt_groups.setdefault(receipt, []).append(case)
-        if case.get("side_effect_count", 0) > 1:
+        side_effects = _safe_count(case.get("side_effect_count", 0))
+        concurrent_writes = _safe_count(case.get("concurrent_duplicate_writes", 0))
+        if side_effects is None or concurrent_writes is None:
+            out.append(_finding("transactions", "Malformed transaction test observation", "medium",
+                "Side-effect and concurrent-write counts must be non-negative integers.",
+                "Normalize test adapter counters to integers before producing the assessment bundle.",
+                {"case_id": str(case.get("case_id", ""))[:80]}))
+            continue
+        if side_effects > 1:
             out.append(_finding("transactions", "Duplicate request caused multiple side effects", "critical",
                 "A synthetic idempotency case recorded more than one business side effect.",
                 "Enforce an atomic idempotency record and unique constraint before applying effects.",
                 {"case_id": str(case.get("case_id", ""))[:80],
-                 "side_effect_count": str(case.get("side_effect_count"))}))
-        if case.get("concurrent_duplicate_writes", 0) > 0:
+                 "side_effect_count": str(side_effects)}))
+        if concurrent_writes > 0:
             out.append(_finding("transactions", "Concurrent duplicate write observed", "critical",
                 "The fixture reports duplicate writes under concurrent request execution.",
                 "Use database-backed uniqueness and transaction isolation; do not rely on in-process locks.",
