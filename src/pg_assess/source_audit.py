@@ -24,6 +24,7 @@ FILES = {
     "daraja_routing": PIPELINE / "daraja_tenant_routing.py",
     "validators": PIPELINE / "validators.py",
     "protection": PIPELINE / "data_protection.py",
+    "mpesa_config": PIPELINE / "mpesa_configuration.py",
     "etl": PIPELINE / "etl_pipeline.py",
     "lineage": PIPELINE / "lineage.py",
     "auth_tests": PIPELINE / "tests/test_auth_lifecycle.py",
@@ -134,7 +135,7 @@ def audit_source_tree(repo_root: str | Path) -> tuple[AssessmentReport, dict]:
         ("AESGCM", "Authenticated encryption for M-Pesa credentials not visible", "high", "Use authenticated encryption with key versioning and rotation for provider credentials."),
         ("MPESA_CREDENTIALS_ENCRYPTION_KEY", "Dedicated M-Pesa credential encryption key not visible", "critical", "Load encryption keys from a secret manager and fail closed when unavailable."),
     ]:
-        _check(findings, "database", sources["protection"], str(FILES["protection"]), indicator, title, severity, recommendation)
+        _check(findings, "database", sources["mpesa_config"], str(FILES["mpesa_config"]), indicator, title, severity, recommendation)
     _check(findings, "database", sources["models"], str(FILES["models"]),
            "UniqueConstraint", "Database uniqueness constraints not visible", "high",
            "Enforce idempotency and tenant constraints in the database, not only application code.")
