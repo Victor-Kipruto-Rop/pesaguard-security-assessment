@@ -277,6 +277,7 @@ def database_checks(config: dict[str, Any]) -> list[Finding]:
         "public_schema_create_revoked": ("high", "Revoke unnecessary CREATE privileges on public schemas."),
         "backup_encryption_enabled": ("high", "Encrypt database backups and test restore access controls."),
         "audit_logging_enabled": ("medium", "Enable security-relevant database audit logging with protected retention."),
+        "read_only_transaction_enforced": ("critical", "Require a read-only database inspection transaction before running posture queries."),
     }
     for key, (severity, recommendation) in controls.items():
         if not _bool(config, key):
