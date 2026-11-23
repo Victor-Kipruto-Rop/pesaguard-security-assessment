@@ -22,3 +22,38 @@ def run(authorization_file: Path = typer.Option(..., exists=True, readable=True)
 
 if __name__ == "__main__":
     app()
+
+
+@app.command("assess-bundle")
+def assess_bundle(bundle_file: Path = typer.Option(..., exists=True, readable=True,
+                                                    help="Sanitized JSON configuration and synthetic fixture bundle."),
+                  output: Path = typer.Option(Path("reports"))):
+    """Run offline PesaGuard domain checks. This command never contacts target systems."""
+    from .bundle import run_bundle
+    from .evidence import EvidenceStore
+    from .reporting import save_bundle_report
+    bundle = __import__("json").loads(bundle_file.read_text(encoding="utf-8"))
+    if not isinstance(bundle, dict):
+        raise typer.BadParameter("Assessment bundle root must be a JSON object.")
+    report, risk = run_bundle(bundle)
+    json_path, html_path = save_bundle_report(report, risk, str(output))
+    store = EvidenceStore(str(output / "evidence.sqlite3"))
+    event = store.append("assessment.completed", {
+        "assessment_id": report.assessment_id,
+        "risk_score": risk["score"],
+        "finding_count": risk["finding_count"],
+    })
+    print(f"[green]Offline assessment complete[/green] {report.assessment_id}")
+    print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
+    print(f"Findings: {risk['finding_count']}")
+    print(f"JSON: {json_path}\\nHTML: {html_path}")
+    print(f"Evidence chain event: {event['sequence']}")
+
+@app.command("verify-evidence")
+def verify_evidence(database: Path = typer.Option(Path("reports/evidence.sqlite3"), exists=True)):
+    """Verify the local evidence journal hash chain."""
+    from .evidence import EvidenceStore
+    result = EvidenceStore(database).verify()
+    if not result["valid"]:
+        raise typer.Exit(code=2)
+    print(f"[green]Evidence chain valid[/green] ({result['verified_events']} events)")
