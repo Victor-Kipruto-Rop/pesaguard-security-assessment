@@ -13,53 +13,102 @@
     "session_idle_timeout_minutes": 20
   },
   "tenancy_cases": [
-    {"case_id":"tenant-a-own-record","expected_allowed":true,"observed_allowed":true},
-    {"case_id":"tenant-a-reads-tenant-b","expected_allowed":false,"observed_allowed":false}
+    {
+      "case_id": "tenant-a-own-record",
+      "expected_allowed": true,
+      "observed_allowed": true
+    },
+    {
+      "case_id": "tenant-a-reads-tenant-b",
+      "expected_allowed": false,
+      "observed_allowed": false
+    }
   ],
   "transaction_cases": [
-    {"case_id":"duplicate-request","idempotency_key":"synthetic-key-001","response_fingerprint":"same-result","side_effect_count":1},
-    {"case_id":"duplicate-receipt","idempotency_key":"synthetic-key-002","provider_receipt":"SYNTHETIC-RCP-001","transaction_id":"synthetic-tx-001"}
+    {
+      "case_id": "duplicate-request",
+      "idempotency_key": "synthetic-key-001",
+      "response_fingerprint": "same-result",
+      "side_effect_count": 1
+    },
+    {
+      "case_id": "duplicate-receipt",
+      "idempotency_key": "synthetic-key-002",
+      "provider_receipt": "SYNTHETIC-RCP-001",
+      "transaction_id": "synthetic-tx-001"
+    }
   ],
   "ledger_entries": [
-    {"transaction_id":"synthetic-tx-001","side":"debit","amount":"250.00","status":"posted","mutable_after_posting":false},
-    {"transaction_id":"synthetic-tx-001","side":"credit","amount":"250.00","status":"posted","mutable_after_posting":false}
+    {
+      "transaction_id": "synthetic-tx-001",
+      "side": "debit",
+      "amount": "250.00",
+      "status": "posted",
+      "mutable_after_posting": false,
+      "currency": "KES"
+    },
+    {
+      "transaction_id": "synthetic-tx-001",
+      "side": "credit",
+      "amount": "250.00",
+      "status": "posted",
+      "mutable_after_posting": false,
+      "currency": "KES"
+    }
   ],
   "daraja": {
-    "callback_url_secret_enabled":true,
-    "provider_source_restrictions_verified":false,
-    "correlate_to_initiated_request":true,
-    "validate_amount_and_shortcode":true,
-    "deduplicate_provider_receipt":true,
-    "independent_status_reconciliation":true,
-    "callback_payload_size_limited":true,
-    "assumes_safaricom_hmac_signature":false
+    "callback_url_secret_enabled": true,
+    "provider_source_restrictions_verified": false,
+    "correlate_to_initiated_request": true,
+    "validate_amount_and_shortcode": true,
+    "deduplicate_provider_receipt": true,
+    "independent_status_reconciliation": true,
+    "callback_payload_size_limited": true,
+    "assumes_safaricom_hmac_signature": false,
+    "callback_token_digest_stored": true,
+    "constant_time_token_comparison": true,
+    "terminal_callback_payload_digest": true,
+    "pending_request_only": true
   },
   "daraja_callbacks": [
-    {"known_initiated_request":true,"amount_matches":true,"shortcode_matches":true,"duplicate_receipt_accepted":false}
+    {
+      "known_initiated_request": true,
+      "amount_matches": true,
+      "shortcode_matches": true,
+      "duplicate_receipt_accepted": false
+    }
   ],
   "database": {
-    "tls_required":true,
-    "sslmode":"verify-full",
-    "application_role_not_superuser":true,
-    "separate_migration_role":true,
-    "public_schema_create_revoked":true,
-    "backup_encryption_enabled":true,
-    "audit_logging_enabled":true
+    "tls_required": true,
+    "sslmode": "verify-full",
+    "application_role_not_superuser": true,
+    "separate_migration_role": true,
+    "public_schema_create_revoked": true,
+    "backup_encryption_enabled": true,
+    "audit_logging_enabled": true
   },
   "pipeline": {
-    "service_account_least_privilege":true,
-    "sensitive_fields_classified":true,
-    "secrets_managed_outside_code":true,
-    "logs_redact_sensitive_values":true,
-    "transport_encryption_enabled":true,
-    "retention_policy_enforced":true,
-    "lineage_and_audit_enabled":true
+    "service_account_least_privilege": true,
+    "sensitive_fields_classified": true,
+    "secrets_managed_outside_code": true,
+    "logs_redact_sensitive_values": true,
+    "transport_encryption_enabled": true,
+    "retention_policy_enforced": true,
+    "lineage_and_audit_enabled": true
   },
   "infrastructure_files": [
-    {"path":"compose.yml","content":"services:\\n  api:\\n    user: \"10001:10001\"\\n    read_only: true\\n"}
+    {
+      "path": "compose.yml",
+      "content": "services:\n  api:\n    user: \"10001:10001\"\n    read_only: true\n"
+    }
   ],
   "outbound_webhook": {
-    "hmac_sha256_enabled":true,
-    "timestamp_and_replay_window_enforced":true
+    "hmac_sha256_enabled": true,
+    "timestamp_and_replay_window_enforced": true,
+    "sign_exact_raw_body": true,
+    "constant_time_signature_comparison": true,
+    "per_tenant_signing_secret": true,
+    "event_id_deduplication": true,
+    "bounded_retry_policy": true
   }
 }
