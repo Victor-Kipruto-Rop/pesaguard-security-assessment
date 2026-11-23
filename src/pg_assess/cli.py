@@ -75,6 +75,12 @@ def assess_source(repo_root: Path = typer.Option(..., exists=True, file_okay=Fal
     from .reporting import save_bundle_report
     report, risk = audit_source_tree(repo_root)
     json_path, html_path = save_bundle_report(report, risk, str(output))
+    from .evidence import EvidenceStore
+    EvidenceStore(str(output / "evidence.sqlite3")).append("pesaguard.source_audit.completed", {
+        "assessment_id": report.assessment_id,
+        "risk_score": risk["score"],
+        "finding_count": risk["finding_count"],
+    })
     print(f"[green]Static source audit complete[/green] {report.assessment_id}")
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
     print(f"Findings: {risk['finding_count']}")
