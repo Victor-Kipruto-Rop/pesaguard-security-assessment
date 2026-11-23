@@ -28,6 +28,8 @@ def approved_address(auth: TargetAuthorization) -> str:
         approved = [ip_address(value) for value in auth.approved_ip_addresses]
     except ValueError as exc:
         raise PolicyError("Approved target IP address is invalid.") from exc
+    if any(value.is_loopback or value.is_unspecified or value.is_link_local or value.is_multicast for value in approved):
+        raise PolicyError("Staging approved IP addresses cannot be loopback, unspecified, link-local, or multicast.")
     if len({str(value) for value in approved}) != len(approved):
         raise PolicyError("Approved target IP addresses must be unique.")
     return str(approved[0])
@@ -57,6 +59,8 @@ def validate_target(auth: TargetAuthorization, requested_checks: list[str]) -> N
             except ValueError as exc:
                 raise PolicyError("Approved target IP address is invalid.") from exc
     elif auth.environment == Environment.STAGING:
+        if host in LOOPBACK_HOSTS:
+            raise PolicyError("Staging targets cannot use loopback hostnames.")
         allowed_hosts = {item.strip().lower() for item in settings.assessment_allowed_staging_hosts.split(",") if item.strip()}
         if not allowed_hosts or host not in allowed_hosts:
             raise PolicyError("Staging hostname is not in ASSESSMENT_ALLOWED_STAGING_HOSTS.")
