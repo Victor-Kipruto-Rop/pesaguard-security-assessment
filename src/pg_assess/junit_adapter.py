@@ -11,10 +11,12 @@ from .risk import score_findings
 
 def _domain(name: str, classname: str) -> str:
     value = f"{classname} {name}".lower()
+    if any(term in value for term in ("outbound_webhook", "webhook_manager", "webhook_delivery")):
+        return "webhook"
+    if any(term in value for term in ("daraja", "mpesa", "callback")):
+        return "daraja"
     if any(term in value for term in ("tenant", "rbac", "authorization", "scope", "export")):
         return "tenancy"
-    if any(term in value for term in ("daraja", "mpesa", "callback", "webhook")):
-        return "daraja"
     if any(term in value for term in ("ledger", "journal", "balance", "double_entry")):
         return "ledger"
     if any(term in value for term in ("idempotency", "concurrency", "transaction", "replay")):
