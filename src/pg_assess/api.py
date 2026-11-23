@@ -33,7 +33,16 @@ async def create_assessment(request: RunRequest):
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Assessment failed: {type(exc).__name__}") from exc
     json_path, html_path = save_report(report, settings.assessment_data_dir)
-    return {"report": report, "artifacts": {"json": json_path.name, "html": html_path.name}}
+    store = EvidenceStore(f"{settings.assessment_data_dir}/evidence.sqlite3")
+    event = store.append("assessment.active.completed", {
+        "assessment_id": report.assessment_id,
+        "target_id": report.target_id,
+        "environment": report.environment.value,
+        "checks_run": report.checks_run,
+        "finding_count": len(report.findings),
+    })
+    return {"report": report, "artifacts": {"json": json_path.name, "html": html_path.name},
+            "evidence_event": event}
 
 
 class SourceFile(BaseModel):
