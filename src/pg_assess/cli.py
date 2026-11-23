@@ -72,8 +72,6 @@ def assess_source(repo_root: Path = typer.Option(..., exists=True, file_okay=Fal
     print(f"Findings: {risk['finding_count']}")
     print(f"JSON: {json_path}\\nHTML: {html_path}")
 
-if __name__ == "__main__":
-    app()
 
 
 @app.command("assess-database")
@@ -99,3 +97,6 @@ def assess_database(confirm_read_only: bool = typer.Option(False, "--confirm-rea
     print(f"[green]Read-only database assessment complete[/green] {report.assessment_id}")
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
     print(f"JSON: {json_path}\\nHTML: {html_path}")
+
+if __name__ == "__main__":
+    app()
