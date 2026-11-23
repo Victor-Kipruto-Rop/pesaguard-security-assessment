@@ -1,4 +1,5 @@
 import asyncio
+import json
 from pathlib import Path
 import typer
 from rich import print
@@ -20,8 +21,6 @@ def run(authorization_file: Path = typer.Option(..., exists=True, readable=True)
     print(f"[green]Assessment complete[/green] {report.assessment_id}")
     print(f"JSON: {paths[0]}\nHTML: {paths[1]}")
 
-if __name__ == "__main__":
-    app()
 
 
 @app.command("assess-bundle")
@@ -32,7 +31,7 @@ def assess_bundle(bundle_file: Path = typer.Option(..., exists=True, readable=Tr
     from .bundle import run_bundle
     from .evidence import EvidenceStore
     from .reporting import save_bundle_report
-    bundle = __import__("json").loads(bundle_file.read_text(encoding="utf-8"))
+    bundle = json.loads(bundle_file.read_text(encoding="utf-8"))
     if not isinstance(bundle, dict):
         raise typer.BadParameter("Assessment bundle root must be a JSON object.")
     report, risk = run_bundle(bundle)
@@ -72,3 +71,6 @@ def assess_source(repo_root: Path = typer.Option(..., exists=True, file_okay=Fal
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
     print(f"Findings: {risk['finding_count']}")
     print(f"JSON: {json_path}\\nHTML: {html_path}")
+
+if __name__ == "__main__":
+    app()
