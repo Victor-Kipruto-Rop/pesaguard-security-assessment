@@ -69,7 +69,7 @@ def run_bundle(bundle: dict[str, Any]) -> tuple[AssessmentReport, dict[str, Any]
         "webhook": lambda: outbound_webhook_checks(bundle.get("outbound_webhook", {})),
     }
     for name, runner in dispatch.items():
-        if name in bundle or name == "tenancy" and "tenancy_cases" in bundle or name == "transactions" and "transaction_cases" in bundle or name == "ledger" and "ledger_entries" in bundle or name == "data_pipeline" and ("pipeline" in bundle or "pipeline_source_files" in bundle) or name == "infrastructure" and "infrastructure_files" in bundle or name == "webhook" and "outbound_webhook" in bundle:
+        if name in bundle or name == "tenancy" and "tenancy_cases" in bundle or name == "daraja" and "daraja_callbacks" in bundle or name == "transactions" and "transaction_cases" in bundle or name == "ledger" and "ledger_entries" in bundle or name == "data_pipeline" and ("pipeline" in bundle or "pipeline_source_files" in bundle) or name == "infrastructure" and "infrastructure_files" in bundle or name == "webhook" and "outbound_webhook" in bundle:
             findings.extend(runner())
             checks.append(name)
     if not checks:
