@@ -91,3 +91,23 @@ def test_infrastructure_checks_flag_privileged_root_and_mutable_image():
     assert any("privileged" in title.lower() for title in titles)
     assert any("root" in title.lower() for title in titles)
     assert any("latest" in title.lower() for title in titles)
+
+
+def test_daraja_inbound_callback_does_not_require_undocumented_hmac():
+    config = {
+        "callback_url_secret_enabled":True,
+        "callback_token_digest_stored":True,
+        "constant_time_token_comparison":True,
+        "terminal_callback_payload_digest":True,
+        "pending_request_only":True,
+        "provider_source_restrictions_verified":True,
+        "correlate_to_initiated_request":True,
+        "validate_amount_and_shortcode":True,
+        "deduplicate_provider_receipt":True,
+        "independent_status_reconciliation":True,
+        "callback_payload_size_limited":True,
+        "assumes_safaricom_hmac_signature":False,
+    }
+    findings = daraja_checks(config)
+    assert not any("HMAC assumption" in f.title for f in findings)
+    assert not any("signature" in f.title.lower() for f in findings)
