@@ -95,14 +95,14 @@ def tenancy_checks(cases: list[dict[str, Any]]) -> list[Finding]:
             out.append(_finding("tenancy", "Malformed tenant authorization case", "medium",
                 "A test case is missing boolean expected_allowed or observed_allowed values.",
                 "Emit normalized test results from the application-owned tenant test adapter.",
-                {"case": str(index), "case_id": str(case.get("case_id", index))}))
+                {"case": str(index), "case_ref": _ref_hash(case.get("case_id", index))}))
             continue
         if expected != observed:
             severity = "critical" if observed and not expected else "high"
             out.append(_finding("tenancy", "Tenant authorization result differs from policy", severity,
                 "The observed access decision does not match the expected tenant policy.",
                 "Enforce tenant ownership in the service/data-access boundary and add regression tests.",
-                {"case_id": str(case.get("case_id", index))[:80],
+                {"case_ref": _ref_hash(case.get("case_id", index)),
                  "expected_allowed": str(expected), "observed_allowed": str(observed)}))
     return out
 
@@ -138,7 +138,7 @@ def transaction_checks(cases: list[dict[str, Any]]) -> list[Finding]:
                 out.append(_finding("transactions", "Provider receipt fixture has no transaction ID", "medium",
                     "A provider receipt observation is missing its internal transaction identifier.",
                     "Record the synthetic internal transaction ID associated with each provider receipt.",
-                    {"case_id": str(case.get("case_id", ""))[:80]}, "medium"))
+                    {"case_ref": _ref_hash(case.get("case_id", ""))}, "medium"))
             else:
                 receipt_groups.setdefault((tenant_id, provider, provider_account, receipt), []).append(case)
         side_effects = _safe_count(case.get("side_effect_count", 0))
@@ -153,7 +153,7 @@ def transaction_checks(cases: list[dict[str, Any]]) -> list[Finding]:
             out.append(_finding("transactions", "Duplicate request caused multiple side effects", "critical",
                 "A synthetic idempotency case recorded more than one business side effect.",
                 "Enforce an atomic idempotency record and unique constraint before applying effects.",
-                {"case_id": str(case.get("case_id", ""))[:80],
+                {"case_ref": _ref_hash(case.get("case_id", "")),
                  "side_effect_count": str(side_effects)}))
         if concurrent_writes > 0:
             out.append(_finding("transactions", "Concurrent duplicate write observed", "critical",
