@@ -98,5 +98,28 @@ def assess_database(confirm_read_only: bool = typer.Option(False, "--confirm-rea
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
     print(f"JSON: {json_path}\\nHTML: {html_path}")
 
+
+
+@app.command("import-junit")
+def import_junit_report(junit_file: Path = typer.Option(..., exists=True, readable=True),
+                        output: Path = typer.Option(Path("reports"))):
+    """Import test results from a bounded JUnit XML report without executing tests."""
+    from .junit_adapter import import_junit
+    from .reporting import save_bundle_report
+    from .evidence import EvidenceStore
+    report, risk = import_junit(junit_file)
+    json_path, html_path = save_bundle_report(report, risk, str(output))
+    store = EvidenceStore(str(output / "evidence.sqlite3"))
+    store.append("pesaguard.junit.imported", {
+        "assessment_id": report.assessment_id,
+        "risk_score": risk["score"],
+        "finding_count": risk["finding_count"],
+        "test_counts": risk["test_counts"],
+    })
+    print(f"[green]JUnit results imported[/green] {report.assessment_id}")
+    print(f"Tests: {risk['test_counts']}")
+    print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
+    print(f"JSON: {json_path}\\nHTML: {html_path}")
+
 if __name__ == "__main__":
     app()
