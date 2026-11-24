@@ -164,4 +164,10 @@ def inspect_adapter_coverage(repo_root: str | Path) -> tuple[AssessmentReport, d
         }
         for domain, tests in DOMAIN_TESTS.items()
     }
-    risk["domain_coverage"]["evidence"] = {\n        "tests_present": len(evidence_present),\n        "tests_expected": len(evidence_tests),\n        "source_modules_present": 2,\n        "source_modules_expected": 2,\n    }\n    return report, risk
+    risk["domain_coverage"]["evidence"] = {
+        "tests_present": len(evidence_present),
+        "tests_expected": len(evidence_tests),
+        "source_modules_present": 2,
+        "source_modules_expected": 2,
+    }
+    return report, risk
