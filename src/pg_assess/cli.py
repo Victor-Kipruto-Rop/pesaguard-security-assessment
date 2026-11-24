@@ -27,7 +27,7 @@ def run(authorization_file: Path = typer.Option(..., exists=True, readable=True)
         "finding_count": len(report.findings),
     })
     print(f"[green]Assessment complete[/green] {report.assessment_id}")
-    print(f"JSON: {paths[0]}\\nHTML: {paths[1]}")
+    print(f"JSON: {paths[0]}\nHTML: {paths[1]}")
 
 
 @app.command("assess-bundle")
@@ -52,7 +52,7 @@ def assess_bundle(bundle_file: Path = typer.Option(..., exists=True, readable=Tr
     print(f"[green]Offline assessment complete[/green] {report.assessment_id}")
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
     print(f"Findings: {risk['finding_count']}")
-    print(f"JSON: {json_path}\\nHTML: {html_path}")
+    print(f"JSON: {json_path}\nHTML: {html_path}")
     print(f"Evidence chain event: {event['sequence']}")
 
 
@@ -84,7 +84,7 @@ def assess_source(repo_root: Path = typer.Option(..., exists=True, file_okay=Fal
     print(f"[green]Static source audit complete[/green] {report.assessment_id}")
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
     print(f"Findings: {risk['finding_count']}")
-    print(f"JSON: {json_path}\\nHTML: {html_path}")
+    print(f"JSON: {json_path}\nHTML: {html_path}")
 
 
 @app.command("assess-pesaguard-coverage")
@@ -107,7 +107,7 @@ def assess_pesaguard_coverage(
     })
     print(f"[green]PesaGuard adapter inventory complete[/green] {report.assessment_id}")
     print(f"Coverage gaps: {risk['finding_count']}")
-    print(f"JSON: {json_path}\\nHTML: {html_path}")
+    print(f"JSON: {json_path}\nHTML: {html_path}")
 
 
 @app.command("assess-database")
@@ -132,7 +132,7 @@ def assess_database(confirm_read_only: bool = typer.Option(False, "--confirm-rea
     })
     print(f"[green]Read-only database assessment complete[/green] {report.assessment_id}")
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
-    print(f"JSON: {json_path}\\nHTML: {html_path}")
+    print(f"JSON: {json_path}\nHTML: {html_path}")
 
 
 @app.command("import-junit")
@@ -155,7 +155,7 @@ def import_junit_report(junit_file: Path = typer.Option(..., exists=True, readab
     print(f"[green]JUnit results imported[/green] {report.assessment_id}")
     print(f"Tests: {risk['test_counts']}")
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
-    print(f"JSON: {json_path}\\nHTML: {html_path}")
+    print(f"JSON: {json_path}\nHTML: {html_path}")
 
 
 if __name__ == "__main__":
