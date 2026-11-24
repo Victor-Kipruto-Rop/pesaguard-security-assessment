@@ -283,6 +283,31 @@ def daraja_checks(config: dict[str, Any], callbacks: list[dict[str, Any]] | None
                 "A repeated synthetic callback receipt was accepted as a new financial event.",
                 "Enforce atomic receipt deduplication and idempotent state transitions.",
                 {"fixture": str(index)}))
+        if callback.get("replay_accepted") is True:
+            out.append(_finding("daraja", "Replayed callback was accepted as a new event", "critical",
+                "A synthetic replay observation indicates that a previously processed callback was accepted again.",
+                "Use durable receipt uniqueness, canonical payload digests, and atomic state transitions.",
+                {"fixture": str(index)}))
+        if callback.get("terminal_state_regressed") is True:
+            out.append(_finding("daraja", "Terminal callback state regressed", "critical",
+                "A synthetic callback changed an already terminal operation back to a non-terminal or conflicting state.",
+                "Make terminal operation states monotonic and quarantine conflicting late callbacks.",
+                {"fixture": str(index)}))
+        if callback.get("invalid_token_accepted") is True:
+            out.append(_finding("daraja", "Callback with invalid route token was accepted", "critical",
+                "A synthetic callback with an invalid or missing route token was accepted.",
+                "Reject invalid callback tokens before parsing or processing financial state.",
+                {"fixture": str(index)}))
+        if callback.get("oversized_payload_accepted") is True:
+            out.append(_finding("daraja", "Oversized callback payload was accepted", "high",
+                "A synthetic callback larger than the configured request limit was accepted.",
+                "Enforce request-body limits at the edge and application layer before parsing.",
+                {"fixture": str(index)}))
+        if callback.get("invalid_schema_accepted") is True:
+            out.append(_finding("daraja", "Malformed callback schema was accepted", "high",
+                "A synthetic callback with invalid field types or missing required fields was accepted.",
+                "Validate callback envelopes and field types before persistence or state transitions.",
+                {"fixture": str(index)}))
     return out
 
 

@@ -111,3 +111,23 @@ def test_daraja_inbound_callback_does_not_require_undocumented_hmac():
     findings = daraja_checks(config)
     assert not any("HMAC assumption" in f.title for f in findings)
     assert not any("signature" in f.title.lower() for f in findings)
+
+def test_daraja_replay_and_terminal_state_regressions_are_critical():
+    findings = daraja_checks({}, [
+        {"replay_accepted": True},
+        {"terminal_state_regressed": True},
+        {"invalid_token_accepted": True},
+    ])
+    critical_titles = [item.title for item in findings if item.severity == "critical"]
+    assert any("replayed callback" in title.lower() for title in critical_titles)
+    assert any("terminal callback state regressed" in title.lower() for title in critical_titles)
+    assert any("invalid route token" in title.lower() for title in critical_titles)
+
+
+def test_daraja_rejects_oversized_and_malformed_callback_observations():
+    findings = daraja_checks({}, [
+        {"oversized_payload_accepted": True},
+        {"invalid_schema_accepted": True},
+    ])
+    assert any("oversized callback" in item.title.lower() for item in findings)
+    assert any("malformed callback schema" in item.title.lower() for item in findings)

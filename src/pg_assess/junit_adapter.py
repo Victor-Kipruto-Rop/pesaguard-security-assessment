@@ -1,6 +1,7 @@
 """Import bounded JUnit XML results from PesaGuard-owned regression tests."""
 from __future__ import annotations
 
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -8,6 +9,7 @@ from defusedxml import ElementTree as ET
 
 from .models import AssessmentReport, Environment, Finding
 from .risk import score_findings
+
 
 def _domain(name: str, classname: str) -> str:
     value = f"{classname} {name}".lower()
@@ -19,13 +21,20 @@ def _domain(name: str, classname: str) -> str:
         return "tenancy"
     if any(term in value for term in ("ledger", "journal", "balance", "double_entry")):
         return "ledger"
-    if any(term in value for term in ("idempotency", "concurrency", "transaction", "replay")):
+    if any(term in value for term in ("idempotency", "concurrency", "transaction", "replay", "event_store")):
         return "transactions"
+    if any(term in value for term in ("database", "postgres", "privilege", "migration", "sql_role")):
+        return "database"
+    if any(term in value for term in ("docker", "deploy", "terraform", "kubernetes", "infrastructure")):
+        return "infrastructure"
+    if any(term in value for term in ("evidence", "reporting", "risk_score", "audit_journal")):
+        return "evidence"
     if any(term in value for term in ("auth", "session", "token", "password", "otp", "login", "mfa")):
         return "identity"
     if any(term in value for term in ("pipeline", "lineage", "data_protection", "ingestion")):
         return "data_pipeline"
     return "general"
+
 
 def import_junit(path: str | Path) -> tuple[AssessmentReport, dict]:
     file_path = Path(path)
@@ -43,17 +52,20 @@ def import_junit(path: str | Path) -> tuple[AssessmentReport, dict]:
         raise ValueError("JUnit report contains no testcase elements.")
     findings: list[Finding] = []
     counts = {"passed": 0, "failed": 0, "errors": 0, "skipped": 0}
+    domain_counts: dict[str, Counter] = {}
     domains: set[str] = set()
     for case in cases:
         name = str(case.attrib.get("name", "unnamed"))[:200]
         classname = str(case.attrib.get("classname", ""))[:200]
         domain = _domain(name, classname)
         domains.add(domain)
+        domain_counts.setdefault(domain, Counter())
         failure = case.find("failure")
         error = case.find("error")
         skipped = case.find("skipped")
         if failure is not None:
             counts["failed"] += 1
+            domain_counts[domain]["failed"] += 1
             severity = "critical" if domain in {"tenancy", "transactions", "ledger", "daraja"} else "high"
             findings.append(Finding(check=domain, title="PesaGuard regression test failed",
                 severity=severity, confidence="high",
@@ -63,6 +75,7 @@ def import_junit(path: str | Path) -> tuple[AssessmentReport, dict]:
                 verified=True))
         elif error is not None:
             counts["errors"] += 1
+            domain_counts[domain]["errors"] += 1
             findings.append(Finding(check=domain, title="PesaGuard regression test errored",
                 severity="high", confidence="high",
                 description="A security regression test errored before producing a reliable assertion result.",
@@ -71,6 +84,7 @@ def import_junit(path: str | Path) -> tuple[AssessmentReport, dict]:
                 verified=True))
         elif skipped is not None:
             counts["skipped"] += 1
+            domain_counts[domain]["skipped"] += 1
             findings.append(Finding(check=domain, title="PesaGuard security regression test was skipped",
                 severity="medium", confidence="high",
                 description="A relevant regression test did not execute.",
@@ -79,6 +93,7 @@ def import_junit(path: str | Path) -> tuple[AssessmentReport, dict]:
                 verified=False))
         else:
             counts["passed"] += 1
+            domain_counts[domain]["passed"] += 1
     now = datetime.now(timezone.utc)
     report = AssessmentReport(assessment_id=str(uuid4()), target_id="pesaguard-junit-import",
         target_url="file://junit-import", environment=Environment.LOCAL,
@@ -89,4 +104,5 @@ def import_junit(path: str | Path) -> tuple[AssessmentReport, dict]:
                "Failure output and captured stdout/stderr are intentionally not copied to avoid leaking secrets or customer data."])
     risk = score_findings(findings)
     risk["test_counts"] = counts
+    risk["domain_test_counts"] = {key: dict(value) for key, value in sorted(domain_counts.items())}
     return report, risk
