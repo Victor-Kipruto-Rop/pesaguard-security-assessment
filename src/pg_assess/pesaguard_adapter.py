@@ -45,7 +45,6 @@ DOMAIN_TESTS: dict[str, tuple[str, ...]] = {
         "test_lineage.py",
     ),
     "infrastructure": ("test_deployment_security.py",),
-    "evidence": ("test_security_audit_evidence.py",),
 }
 
 SOURCE_MODULES: dict[str, tuple[str, ...]] = {
@@ -62,7 +61,6 @@ SOURCE_MODULES: dict[str, tuple[str, ...]] = {
     "database": ("models.py", "mpesa_configuration.py"),
     "data_pipeline": ("data_protection.py", "etl_pipeline.py", "lineage.py"),
     "infrastructure": (),
-    "evidence": (),
 }
 
 
@@ -120,6 +118,25 @@ def inspect_adapter_coverage(repo_root: str | Path) -> tuple[AssessmentReport, d
                 verified=False,
             ))
 
+    # Evidence/reporting are owned by this assessor repository, not api.pesaguard.
+    assessor_tests = Path(__file__).resolve().parents[2] / "tests"
+    evidence_tests = ("test_evidence.py", "test_reporting.py", "test_junit_adapter.py")
+    evidence_present = [name for name in evidence_tests if (assessor_tests / name).is_file()]
+    evidence_missing = [name for name in evidence_tests if name not in evidence_present]
+    if evidence_missing:
+        findings.append(Finding(
+            check="evidence",
+            title="Evidence and reporting regression coverage is incomplete",
+            severity="medium",
+            confidence="high",
+            description="The assessment toolkit is missing expected evidence/reporting regression test modules.",
+            evidence={"present_tests": ",".join(evidence_present) or "none",
+                      "missing_tests": ",".join(evidence_missing)},
+            recommendation="Add tests for hash-chain tampering, report escaping, evidence linkage, and domain coverage rendering.",
+            verified=False,
+        ))
+    checks_run.append("evidence")
+
     now = datetime.now(timezone.utc)
     report = AssessmentReport(
         assessment_id=str(uuid4()),
@@ -134,7 +151,7 @@ def inspect_adapter_coverage(repo_root: str | Path) -> tuple[AssessmentReport, d
         notes=[
             "Coverage inventory only: this command does not import PesaGuard or execute its tests.",
             "A present test file does not prove its assertions passed; import a JUnit report for execution evidence.",
-            "Ledger, database, infrastructure, and evidence coverage are explicitly reported when their dedicated test modules are absent.",
+            "Ledger, database, and infrastructure application-owned test gaps are reported separately from this toolkit’s evidence/reporting tests.",
         ],
     )
     risk = score_findings(findings)
@@ -147,4 +164,4 @@ def inspect_adapter_coverage(repo_root: str | Path) -> tuple[AssessmentReport, d
         }
         for domain, tests in DOMAIN_TESTS.items()
     }
-    return report, risk
+    risk["domain_coverage"]["evidence"] = {\n        "tests_present": len(evidence_present),\n        "tests_expected": len(evidence_tests),\n        "source_modules_present": 2,\n        "source_modules_expected": 2,\n    }\n    return report, risk
