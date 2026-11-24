@@ -27,8 +27,7 @@ def run(authorization_file: Path = typer.Option(..., exists=True, readable=True)
         "finding_count": len(report.findings),
     })
     print(f"[green]Assessment complete[/green] {report.assessment_id}")
-    print(f"JSON: {paths[0]}\nHTML: {paths[1]}")
-
+    print(f"JSON: {paths[0]}\\nHTML: {paths[1]}")
 
 
 @app.command("assess-bundle")
@@ -53,8 +52,9 @@ def assess_bundle(bundle_file: Path = typer.Option(..., exists=True, readable=Tr
     print(f"[green]Offline assessment complete[/green] {report.assessment_id}")
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
     print(f"Findings: {risk['finding_count']}")
-    print(f"JSON: {json_path}\nHTML: {html_path}")
+    print(f"JSON: {json_path}\\nHTML: {html_path}")
     print(f"Evidence chain event: {event['sequence']}")
+
 
 @app.command("verify-evidence")
 def verify_evidence(database: Path = typer.Option(Path("reports/evidence.sqlite3"), exists=True)):
@@ -84,8 +84,30 @@ def assess_source(repo_root: Path = typer.Option(..., exists=True, file_okay=Fal
     print(f"[green]Static source audit complete[/green] {report.assessment_id}")
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
     print(f"Findings: {risk['finding_count']}")
-    print(f"JSON: {json_path}\nHTML: {html_path}")
+    print(f"JSON: {json_path}\\nHTML: {html_path}")
 
+
+@app.command("assess-pesaguard-coverage")
+def assess_pesaguard_coverage(
+    repo_root: Path = typer.Option(..., exists=True, file_okay=False, readable=True,
+                                   help="Local root of a PesaGuard API checkout."),
+    output: Path = typer.Option(Path("reports")),
+):
+    """Inventory PesaGuard-specific test and source adapter coverage without executing the application."""
+    from .pesaguard_adapter import inspect_adapter_coverage
+    from .reporting import save_bundle_report
+    from .evidence import EvidenceStore
+    report, risk = inspect_adapter_coverage(repo_root)
+    json_path, html_path = save_bundle_report(report, risk, str(output))
+    EvidenceStore(str(output / "evidence.sqlite3")).append("pesaguard.adapter_coverage.completed", {
+        "assessment_id": report.assessment_id,
+        "risk_score": risk["score"],
+        "finding_count": risk["finding_count"],
+        "domain_coverage": risk["domain_coverage"],
+    })
+    print(f"[green]PesaGuard adapter inventory complete[/green] {report.assessment_id}")
+    print(f"Coverage gaps: {risk['finding_count']}")
+    print(f"JSON: {json_path}\\nHTML: {html_path}")
 
 
 @app.command("assess-database")
@@ -110,8 +132,7 @@ def assess_database(confirm_read_only: bool = typer.Option(False, "--confirm-rea
     })
     print(f"[green]Read-only database assessment complete[/green] {report.assessment_id}")
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
-    print(f"JSON: {json_path}\nHTML: {html_path}")
-
+    print(f"JSON: {json_path}\\nHTML: {html_path}")
 
 
 @app.command("import-junit")
@@ -129,11 +150,13 @@ def import_junit_report(junit_file: Path = typer.Option(..., exists=True, readab
         "risk_score": risk["score"],
         "finding_count": risk["finding_count"],
         "test_counts": risk["test_counts"],
+        "domain_test_counts": risk["domain_test_counts"],
     })
     print(f"[green]JUnit results imported[/green] {report.assessment_id}")
     print(f"Tests: {risk['test_counts']}")
     print(f"Risk prioritization: {risk['band']} ({risk['score']}/100)")
-    print(f"JSON: {json_path}\nHTML: {html_path}")
+    print(f"JSON: {json_path}\\nHTML: {html_path}")
+
 
 if __name__ == "__main__":
     app()
