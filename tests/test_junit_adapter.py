@@ -24,3 +24,17 @@ def test_junit_rejects_empty_suite(tmp_path):
     report_file.write_text("<testsuite/>")
     with pytest.raises(ValueError, match="no testcase"):
         import_junit(report_file)
+
+def test_junit_tracks_domain_specific_execution_counts(tmp_path):
+    report_file = tmp_path / "domain-results.xml"
+    report_file.write_text(
+        '<testsuite tests="3" failures="1">'
+        '<testcase classname="tests.test_database_privileges" name="test_runtime_role"/>'
+        '<testcase classname="tests.test_ledger_invariants" name="test_unbalanced_journal"><failure/></testcase>'
+        '<testcase classname="tests.test_deployment_security" name="test_root_container"/>'
+        '</testsuite>', encoding="utf-8")
+    report, risk = import_junit(report_file)
+    assert risk["domain_test_counts"]["database"]["passed"] == 1
+    assert risk["domain_test_counts"]["ledger"]["failed"] == 1
+    assert risk["domain_test_counts"]["infrastructure"]["passed"] == 1
+    assert report.findings[0].check == "ledger"
